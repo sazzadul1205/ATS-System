@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('country')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         // Job Listings
@@ -33,6 +34,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('category_id')->nullable()->constrained('job_categories')->nullOnDelete();
             $table->string('title');
+            $table->string('slug')->nullable();
             $table->text('description')->nullable();
             $table->text('requirements')->nullable();
             $table->text('responsibilities')->nullable();
@@ -47,7 +49,7 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['is_active', 'created_at']);
         });
 
@@ -109,7 +111,7 @@ return new class extends Migration
             $table->string('linkedin_link')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['status', 'created_at']);
             $table->index(['job_listing_id', 'status']);
         });
@@ -121,7 +123,7 @@ return new class extends Migration
             $table->string('status');
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->index('application_id');
         });
     }

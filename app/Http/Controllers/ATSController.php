@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Application;
 use App\Models\JobListing;
-use App\Services\ATSService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,11 +25,11 @@ class ATSController extends Controller
         ];
 
         // ATS Stats
-        $atsStats = Application::selectRaw('
-            AVG(CAST(JSON_EXTRACT(ats_score, "$.percentage") AS UNSIGNED)) as avg_ats,
-            MIN(CAST(JSON_EXTRACT(ats_score, "$.percentage") AS UNSIGNED)) as min_ats,
-            MAX(CAST(JSON_EXTRACT(ats_score, "$.percentage") AS UNSIGNED)) as max_ats
-        ')->first();
+        $atsStats = Application::selectRaw("
+            AVG(CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED)) as avg_ats,
+            MIN(CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED)) as min_ats,
+            MAX(CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED)) as max_ats
+        ")->first();
 
         // Recent applications
         $recentApplications = Application::with(['jobListing', 'applicantProfile'])
@@ -75,7 +73,7 @@ class ATSController extends Controller
     public function applications(Request $request): Response
     {
         $query = Application::with([
-            'jobListing' => fn($q) => $q->with(['category', 'locations']),
+            'jobListing' => fn ($q) => $q->with(['category', 'locations']),
             'applicantProfile.user',
             'statusTimelines',
         ]);
@@ -93,12 +91,12 @@ class ATSController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('min_ats_score')) {
-            $query->whereRaw('CAST(JSON_EXTRACT(ats_score, "$.percentage") AS UNSIGNED) >= ?', [$request->min_ats_score]);
+            $query->whereRaw("CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED) >= ?", [$request->min_ats_score]);
         }
 
         $perPage = $request->input('per_page', 15);
@@ -124,7 +122,7 @@ class ATSController extends Controller
                 'education_level' => $app->education_level,
                 'expected_salary' => $app->expected_salary,
                 'created_at' => $app->created_at->format('Y-m-d H:i'),
-                'can_update' => !in_array($app->status, ['hired', 'rejected']),
+                'can_update' => ! in_array($app->status, ['hired', 'rejected']),
             ];
         });
 
@@ -152,15 +150,15 @@ class ATSController extends Controller
     public function showApplication(int $id): Response
     {
         $application = Application::with([
-            'jobListing' => fn($q) => $q->with(['employer', 'category', 'locations']),
-            'applicantProfile' => fn($q) => $q->with([
+            'jobListing' => fn ($q) => $q->with(['employer', 'category', 'locations']),
+            'applicantProfile' => fn ($q) => $q->with([
                 'user',
                 'jobHistories',
                 'educationHistories',
                 'achievements',
                 'cvs',
             ]),
-            'statusTimelines' => fn($q) => $q->orderBy('created_at', 'desc'),
+            'statusTimelines' => fn ($q) => $q->orderBy('created_at', 'desc'),
         ])->findOrFail($id);
 
         $atsAnalysis = $application->ats_score['analysis'] ?? null;
@@ -183,7 +181,7 @@ class ATSController extends Controller
 
         $application = Application::findOrFail($id);
         $oldStatus = $application->status;
-        
+
         $application->updateStatus($validated['status'], $validated['notes']);
 
         return back()->with('success', "Application status updated from {$oldStatus} to {$validated['status']}.");
@@ -206,7 +204,7 @@ class ATSController extends Controller
                 $app->updateStatus($validated['status'], $validated['notes']);
             });
 
-        return back()->with('success', count($validated['application_ids']) . ' applications updated successfully.');
+        return back()->with('success', count($validated['application_ids']).' applications updated successfully.');
     }
 
     /**
@@ -215,17 +213,17 @@ class ATSController extends Controller
     public function recalculateAtsScore(int $id)
     {
         $application = Application::findOrFail($id);
-        
+
         try {
             $success = $application->recalculateAtsScoreInline();
-            
+
             if ($success) {
                 return back()->with('success', 'ATS score recalculated successfully.');
             }
-            
+
             return back()->with('error', 'Failed to recalculate ATS score.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->with('error', 'Error: '.$e->getMessage());
         }
     }
 
