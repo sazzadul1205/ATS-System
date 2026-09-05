@@ -1,25 +1,67 @@
-.DS_Store
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.class
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# Dependencies
+vendor/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build directories
+dist/
+build/
+target/
+coverage/
+htmlcov/
+
+# Environment specific
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/bootstrap/ssr
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-auth.json
-Homestead.json
-Homestead.yaml
-npm-debug.log
-yarn-error.log
+.env.local
+.env.*
+.env.local.*
+.env.*.local
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# PHP specific
+*.php~
+*.php.bak
+*.php.swp
+
+# Laravel specific
+bootstrap/cache/
+storage/logs/
+storage/framework/
+public/storage/
+
+# TypeScript/JavaScript
+.npm/
+.yarn/
+tsconfig.tsbuildinfo
+```
