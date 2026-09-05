@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Application;
 use App\Models\JobListing;
+use App\Models\StatusTimeline;
+use Closure;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Inertia\Inertia;
 use Inertia\Response;
+use ZipArchive;
 
 class ATSController extends Controller
 {
@@ -273,5 +278,110 @@ class ATSController extends Controller
             'statusCounts' => $statusCounts,
             'filters' => $request->only(['status']),
         ]);
+    }
+
+    /**
+     * Show the public application form for a job listing.
+     */
+    public function applyForm(int $jobId): Response
+    {
+        $job = JobListing::with(['category', 'locations'])->findOrFail($jobId);
+
+        return Inertia::render('ATS/Apply', [
+            'job' => [
+                'id' => $job->id,
+                'title' => $job->title,
+                'description' => $job->description,
+                'requirements' => $job->requirements,
+                'keywords' => collect($job->keywords)->take(15)->values(),
+                'category' => $job->category?->name,
+                'locations' => $job->locations->pluck('name')->values(),
+                'job_type' => $job->getJobTypeLabelAttribute(),
+                'is_active' => $job->is_active,
+            ],
+        ]);
+    }
+
+    /**
+     * Store a public application with a CV and run the ATS score inline.
+     */
+    public function storeApplication(Request $request, int $jobId): RedirectResponse
+    {
+        $job = JobListing::findOrFail($jobId);
+
+        if (! $job->is_active) {
+            return back()->withErrors(['cv' => 'This job posting is no longer accepting applications.']);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'years_of_experience' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'education_level' => ['nullable', 'in:high_school,associate,bachelor,master,phd'],
+            'expected_salary' => ['nullable', 'numeric', 'min:0'],
+            'cv' => [
+                'required',
+                'file',
+                'extensions:pdf,doc,docx',
+                'max:5120',
+                function (string $attribute, UploadedFile $file, Closure $fail): void {
+                    $extension = strtolower($file->getClientOriginalExtension());
+                    $contents = file_get_contents($file->getRealPath());
+                    $isValid = match ($extension) {
+                        'pdf' => is_string($contents) && str_starts_with($contents, '%PDF-'),
+                        'doc' => is_string($contents) && str_starts_with($contents, "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"),
+                        'docx' => $this->isValidDocx($file),
+                        default => false,
+                    };
+
+                    if (! $isValid) {
+                        $fail('The CV must be a valid PDF, DOC, or DOCX file.');
+                    }
+                },
+            ],
+        ]);
+
+        $resumePath = $request->file('cv')->store('resumes', 'public');
+
+        $application = Application::create([
+            'job_listing_id' => $job->id,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'resume_path' => $resumePath,
+            'years_of_experience' => (int) ($validated['years_of_experience'] ?? 0),
+            'education_level' => $validated['education_level'] ?? 'bachelor',
+            'expected_salary' => $validated['expected_salary'] ?? null,
+            'status' => Application::STATUS_PENDING,
+            'ats_calculation_status' => Application::ATS_PENDING,
+        ]);
+
+        StatusTimeline::create([
+            'application_id' => $application->id,
+            'status' => Application::STATUS_PENDING,
+            'notes' => 'Application received',
+        ]);
+
+        // Run the ATS score inline so the tester sees the result immediately.
+        $application->recalculateAtsScoreInline();
+
+        return redirect()
+            ->route('ats.applications.show', $application->id)
+            ->with('success', 'Your application was submitted and scored by the ATS. View your result below.');
+    }
+
+    private function isValidDocx(UploadedFile $file): bool
+    {
+        $archive = new ZipArchive;
+
+        if ($archive->open($file->getRealPath()) !== true) {
+            return false;
+        }
+
+        $hasDocument = $archive->locateName('word/document.xml') !== false;
+        $archive->close();
+
+        return $hasDocument;
     }
 }

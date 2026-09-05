@@ -19,5 +19,9 @@ export interface NavItem {
 
 export interface SharedData {
     name: string;
+    flash: {
+        success?: string;
+        error?: string;
+    };
     [key: string]: unknown;
 }

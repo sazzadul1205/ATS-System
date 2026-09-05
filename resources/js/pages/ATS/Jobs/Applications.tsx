@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -57,6 +57,7 @@ interface JobApplicationsProps {
     filters: {
         status?: string;
     };
+    [key: string]: unknown;
 }
 
 export default function JobApplications() {
@@ -64,10 +65,14 @@ export default function JobApplications() {
     const { job, applications, statusCounts, filters } = props;
 
     const handleStatusFilter = (status: string) => {
-        router.get(`/ats/jobs/${job.id}/applications`, { status }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.get(
+            `/ats/jobs/${job.id}/applications`,
+            { status },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
     };
 
     const handleStatusUpdate = (id: number, status: string) => {
@@ -77,22 +82,22 @@ export default function JobApplications() {
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'pending':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-400';
             case 'shortlisted':
-                return 'bg-green-100 text-green-800';
+                return 'border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-400';
             case 'rejected':
-                return 'bg-red-100 text-red-800';
+                return 'border-transparent bg-destructive/15 text-destructive';
             case 'hired':
-                return 'bg-blue-100 text-blue-800';
+                return 'border-transparent bg-sky-500/15 text-sky-700 dark:text-sky-400';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'border-transparent bg-muted text-muted-foreground';
         }
     };
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return 'bg-green-500';
-        if (score >= 60) return 'bg-yellow-500';
-        return 'bg-red-500';
+        if (score >= 80) return 'bg-emerald-500';
+        if (score >= 60) return 'bg-amber-500';
+        return 'bg-destructive';
     };
 
     return (
@@ -101,8 +106,8 @@ export default function JobApplications() {
             <div className="space-y-6">
                 {/* Header */}
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-800">{job.title}</h2>
-                    <p className="text-gray-600 mt-1">
+                    <h2 className="text-foreground text-3xl font-bold">{job.title}</h2>
+                    <p className="text-muted-foreground mt-1">
                         {job.category && `${job.category.name} • `}
                         {applications.total} applications
                     </p>
@@ -112,134 +117,124 @@ export default function JobApplications() {
                 <div className="grid grid-cols-4 gap-4">
                     <button
                         onClick={() => handleStatusFilter('')}
-                        className={`bg-white rounded-lg shadow p-4 border ${
-                            !filters.status ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                        className={`bg-card rounded-lg border p-4 shadow ${
+                            !filters.status ? 'border-primary ring-primary/20 ring-2' : 'border-border'
                         }`}
                     >
-                        <p className="text-sm text-gray-600">All</p>
-                        <p className="text-2xl font-bold text-gray-800">{applications.total}</p>
+                        <p className="text-muted-foreground text-sm">All</p>
+                        <p className="text-foreground text-2xl font-bold">{applications.total}</p>
                     </button>
                     <button
                         onClick={() => handleStatusFilter('pending')}
-                        className={`bg-white rounded-lg shadow p-4 border ${
-                            filters.status === 'pending' ? 'border-yellow-500 ring-2 ring-yellow-200' : 'border-gray-200'
+                        className={`bg-card rounded-lg border p-4 shadow ${
+                            filters.status === 'pending' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-border'
                         }`}
                     >
-                        <p className="text-sm text-gray-600">Pending</p>
-                        <p className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</p>
+                        <p className="text-muted-foreground text-sm">Pending</p>
+                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{statusCounts.pending}</p>
                     </button>
                     <button
                         onClick={() => handleStatusFilter('shortlisted')}
-                        className={`bg-white rounded-lg shadow p-4 border ${
-                            filters.status === 'shortlisted' ? 'border-green-500 ring-2 ring-green-200' : 'border-gray-200'
+                        className={`bg-card rounded-lg border p-4 shadow ${
+                            filters.status === 'shortlisted' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-border'
                         }`}
                     >
-                        <p className="text-sm text-gray-600">Shortlisted</p>
-                        <p className="text-2xl font-bold text-green-600">{statusCounts.shortlisted}</p>
+                        <p className="text-muted-foreground text-sm">Shortlisted</p>
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statusCounts.shortlisted}</p>
                     </button>
                     <button
                         onClick={() => handleStatusFilter('hired')}
-                        className={`bg-white rounded-lg shadow p-4 border ${
-                            filters.status === 'hired' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                        className={`bg-card rounded-lg border p-4 shadow ${
+                            filters.status === 'hired' ? 'border-primary ring-primary/20 ring-2' : 'border-border'
                         }`}
                     >
-                        <p className="text-sm text-gray-600">Hired</p>
-                        <p className="text-2xl font-bold text-blue-600">{statusCounts.hired}</p>
+                        <p className="text-muted-foreground text-sm">Hired</p>
+                        <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">{statusCounts.hired}</p>
                     </button>
                 </div>
 
                 {/* Applications Table */}
-                <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                <div className="bg-card border-border overflow-hidden rounded-lg border shadow-xs">
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                        <table className="divide-border min-w-full divide-y">
+                            <thead className="bg-muted/50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Applicant
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         ATS Score
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Experience
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Status</th>
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Applied Date
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-right text-xs font-medium tracking-wider uppercase">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-card divide-border divide-y">
                                 {applications.data.map((app) => (
-                                    <tr key={app.id} className="hover:bg-gray-50">
+                                    <tr key={app.id} className="hover:bg-muted/50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div>
-                                                <div className="text-sm font-medium text-gray-900">{app.name}</div>
-                                                <div className="text-sm text-gray-500">{app.email}</div>
-                                                {app.phone && (
-                                                    <div className="text-xs text-gray-400">{app.phone}</div>
-                                                )}
+                                                <div className="text-foreground text-sm font-medium">{app.name}</div>
+                                                <div className="text-muted-foreground text-sm">{app.email}</div>
+                                                {app.phone && <div className="text-muted-foreground text-xs">{app.phone}</div>}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className="w-full bg-gray-200 rounded-full h-2.5 w-24">
+                                                <div className="bg-muted h-2.5 w-24 w-full rounded-full">
                                                     <div
                                                         className={`h-2.5 rounded-full ${getScoreColor(app.ats_score)}`}
                                                         style={{ width: `${app.ats_score}%` }}
                                                     ></div>
                                                 </div>
-                                                <span className="ml-2 text-sm font-medium text-gray-700">
-                                                    {app.ats_score}%
-                                                </span>
+                                                <span className="text-muted-foreground ml-2 text-sm font-medium">{app.ats_score}%</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+                                            <div className="text-foreground text-sm">
                                                 {app.years_of_experience ? `${app.years_of_experience} yrs` : 'N/A'}
                                             </div>
-                                            {app.education_level && (
-                                                <div className="text-xs text-gray-500">{app.education_level}</div>
-                                            )}
+                                            {app.education_level && <div className="text-muted-foreground text-xs">{app.education_level}</div>}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
-                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                                                    app.status
+                                                className={`inline-flex rounded-full px-2 text-xs leading-5 font-semibold ${getStatusBadgeClass(
+                                                    app.status,
                                                 )}`}
                                             >
                                                 {app.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="text-muted-foreground px-6 py-4 text-sm whitespace-nowrap">
                                             {new Date(app.created_at).toLocaleDateString()}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => router.visit(`/ats/applications/${app.id}`)}
-                                                    className="text-blue-600 hover:text-blue-900"
+                                                    className="text-primary hover:text-primary/80"
                                                 >
                                                     View
                                                 </button>
                                                 {app.can_update && (
                                                     <>
                                                         <button
-                                                            onClick={() =>
-                                                                handleStatusUpdate(app.id, 'shortlisted')
-                                                            }
-                                                            className="text-green-600 hover:text-green-900"
+                                                            onClick={() => handleStatusUpdate(app.id, 'shortlisted')}
+                                                            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
                                                         >
                                                             Shortlist
                                                         </button>
                                                         <button
                                                             onClick={() => handleStatusUpdate(app.id, 'rejected')}
-                                                            className="text-red-600 hover:text-red-900"
+                                                            className="text-destructive hover:text-destructive/80"
                                                         >
                                                             Reject
                                                         </button>
@@ -262,10 +257,8 @@ export default function JobApplications() {
                                 key={index}
                                 disabled={!link.url}
                                 onClick={() => link.url && router.visit(link.url)}
-                                className={`px-4 py-2 rounded ${
-                                    link.active
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                className={`rounded px-4 py-2 ${
+                                    link.active ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
                                 } disabled:opacity-50`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
@@ -274,12 +267,10 @@ export default function JobApplications() {
                 )}
 
                 {applications.data.length === 0 && (
-                    <div className="text-center py-12">
-                        <h3 className="text-lg font-medium text-gray-900">No applications found</h3>
-                        <p className="text-gray-500 mt-1">
-                            {filters.status
-                                ? `No ${filters.status} applications for this job`
-                                : 'No applications yet for this job'}
+                    <div className="py-12 text-center">
+                        <h3 className="text-foreground text-lg font-medium">No applications found</h3>
+                        <p className="text-muted-foreground mt-1">
+                            {filters.status ? `No ${filters.status} applications for this job` : 'No applications yet for this job'}
                         </p>
                     </div>
                 )}

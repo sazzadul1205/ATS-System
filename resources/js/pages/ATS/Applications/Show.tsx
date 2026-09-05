@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -103,6 +103,11 @@ interface ApplicationShowProps {
         status_timelines: StatusTimeline[];
     };
     atsAnalysis: ATSAnalysis | null;
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+    [key: string]: unknown;
 }
 
 export default function ApplicationShow() {
@@ -120,49 +125,57 @@ export default function ApplicationShow() {
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'pending':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-400';
             case 'shortlisted':
-                return 'bg-green-100 text-green-800';
+                return 'border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-400';
             case 'rejected':
-                return 'bg-red-100 text-red-800';
+                return 'border-transparent bg-destructive/15 text-destructive';
             case 'hired':
-                return 'bg-blue-100 text-blue-800';
+                return 'border-transparent bg-sky-500/15 text-sky-700 dark:text-sky-400';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'border-transparent bg-muted text-muted-foreground';
         }
     };
 
     const atsPercentage = application.ats_score?.percentage ?? 0;
     const getScoreColor = (score: number) => {
-        if (score >= 80) return 'bg-green-500';
-        if (score >= 60) return 'bg-yellow-500';
-        return 'bg-red-500';
+        if (score >= 80) return 'bg-emerald-500';
+        if (score >= 60) return 'bg-amber-500';
+        return 'bg-destructive';
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${application.name} - Application`} />
             <div className="space-y-6">
+                {props.flash?.success && (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+                        {props.flash.success}
+                    </div>
+                )}
+                {props.flash?.error && (
+                    <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm">
+                        {props.flash.error}
+                    </div>
+                )}
                 {/* Header */}
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-800">{application.name}</h2>
-                        <p className="text-gray-600 mt-1">
-                            Applying for: {application.job_listing.title}
-                        </p>
+                        <h2 className="text-foreground text-3xl font-bold">{application.name}</h2>
+                        <p className="text-muted-foreground mt-1">Applying for: {application.job_listing.title}</p>
                     </div>
                     <div className="flex gap-2">
                         {application.status !== 'hired' && application.status !== 'rejected' && (
                             <>
                                 <button
                                     onClick={() => handleStatusUpdate('shortlisted')}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                    className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
                                 >
                                     Shortlist
                                 </button>
                                 <button
                                     onClick={() => handleStatusUpdate('rejected')}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium"
                                 >
                                     Reject
                                 </button>
@@ -170,60 +183,58 @@ export default function ApplicationShow() {
                         )}
                         <button
                             onClick={handleRecalculateATS}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md px-4 py-2 text-sm font-medium"
                         >
                             Recalculate ATS
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="space-y-6 lg:col-span-2">
                         {/* Application Info */}
-                        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Application Information</h3>
+                        <div className="bg-card border-border rounded-lg border p-6 shadow-xs">
+                            <h3 className="text-foreground mb-4 text-lg font-semibold">Application Information</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Email</label>
-                                    <p className="text-gray-800">{application.email}</p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Email</label>
+                                    <p className="text-foreground">{application.email}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Phone</label>
-                                    <p className="text-gray-800">{application.phone || 'N/A'}</p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Phone</label>
+                                    <p className="text-foreground">{application.phone || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Experience</label>
-                                    <p className="text-gray-800">
-                                        {application.years_of_experience
-                                            ? `${application.years_of_experience} years`
-                                            : 'N/A'}
+                                    <label className="text-muted-foreground block text-sm font-medium">Experience</label>
+                                    <p className="text-foreground">
+                                        {application.years_of_experience ? `${application.years_of_experience} years` : 'N/A'}
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Education</label>
-                                    <p className="text-gray-800">{application.education_level || 'N/A'}</p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Education</label>
+                                    <p className="text-foreground">{application.education_level || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Expected Salary</label>
-                                    <p className="text-gray-800">{application.expected_salary || 'N/A'}</p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Expected Salary</label>
+                                    <p className="text-foreground">{application.expected_salary || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Applied Date</label>
-                                    <p className="text-gray-800">{new Date(application.created_at).toLocaleDateString()}</p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Applied Date</label>
+                                    <p className="text-foreground">{new Date(application.created_at).toLocaleDateString()}</p>
                                 </div>
                             </div>
 
                             {(application.facebook_link || application.linkedin_link) && (
-                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                    <h4 className="text-sm font-medium text-gray-700 mb-2">Social Links</h4>
+                                <div className="border-border mt-4 border-t pt-4">
+                                    <h4 className="text-muted-foreground mb-2 text-sm font-medium">Social Links</h4>
                                     <div className="flex gap-4">
                                         {application.facebook_link && (
                                             <a
                                                 href={application.facebook_link}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline"
+                                                className="text-sky-600 hover:underline dark:text-sky-400"
                                             >
                                                 Facebook Profile
                                             </a>
@@ -233,7 +244,7 @@ export default function ApplicationShow() {
                                                 href={application.linkedin_link}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline"
+                                                className="text-sky-600 hover:underline dark:text-sky-400"
                                             >
                                                 LinkedIn Profile
                                             </a>
@@ -244,29 +255,26 @@ export default function ApplicationShow() {
                         </div>
 
                         {/* ATS Score Analysis */}
-                        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">ATS Score Analysis</h3>
+                        <div className="bg-card border-border rounded-lg border p-6 shadow-xs">
+                            <h3 className="text-foreground mb-4 text-lg font-semibold">ATS Score Analysis</h3>
                             <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-gray-700">Match Score</span>
-                                    <span className="text-lg font-bold text-gray-800">{atsPercentage}%</span>
+                                <div className="mb-2 flex items-center justify-between">
+                                    <span className="text-muted-foreground text-sm font-medium">Match Score</span>
+                                    <span className="text-foreground text-lg font-bold">{atsPercentage}%</span>
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-4">
-                                    <div
-                                        className={`h-4 rounded-full ${getScoreColor(atsPercentage)}`}
-                                        style={{ width: `${atsPercentage}%` }}
-                                    ></div>
+                                <div className="bg-muted h-4 w-full rounded-full">
+                                    <div className={`h-4 rounded-full ${getScoreColor(atsPercentage)}`} style={{ width: `${atsPercentage}%` }}></div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="mt-4 grid grid-cols-2 gap-4">
                                 <div>
-                                    <h4 className="text-sm font-medium text-green-700 mb-2">Matched Keywords</h4>
+                                    <h4 className="mb-2 text-sm font-medium text-green-700">Matched Keywords</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {application.matched_keywords.map((keyword, i) => (
                                             <span
                                                 key={i}
-                                                className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+                                                className="rounded border-transparent bg-emerald-500/15 px-2 py-1 text-xs text-emerald-700 dark:text-emerald-400"
                                             >
                                                 {keyword}
                                             </span>
@@ -274,13 +282,10 @@ export default function ApplicationShow() {
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-medium text-red-700 mb-2">Missing Keywords</h4>
+                                    <h4 className="mb-2 text-sm font-medium text-red-700">Missing Keywords</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {application.missing_keywords.map((keyword, i) => (
-                                            <span
-                                                key={i}
-                                                className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded"
-                                            >
+                                            <span key={i} className="bg-destructive/15 text-destructive rounded border-transparent px-2 py-1 text-xs">
                                                 {keyword}
                                             </span>
                                         ))}
@@ -289,11 +294,11 @@ export default function ApplicationShow() {
                             </div>
 
                             {atsAnalysis && (
-                                <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                                <div className="border-border mt-4 space-y-2 border-t pt-4">
                                     {atsAnalysis.recommendations && (
                                         <div>
-                                            <h4 className="text-sm font-medium text-gray-700 mb-1">Recommendations</h4>
-                                            <ul className="list-disc list-inside text-sm text-gray-600">
+                                            <h4 className="text-muted-foreground mb-1 text-sm font-medium">Recommendations</h4>
+                                            <ul className="text-muted-foreground list-inside list-disc text-sm">
                                                 {atsAnalysis.recommendations.map((rec, i) => (
                                                     <li key={i}>{rec}</li>
                                                 ))}
@@ -305,30 +310,26 @@ export default function ApplicationShow() {
                         </div>
 
                         {/* Job Details */}
-                        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Job Details</h3>
+                        <div className="bg-card border-border rounded-lg border p-6 shadow-xs">
+                            <h3 className="text-foreground mb-4 text-lg font-semibold">Job Details</h3>
                             <div className="space-y-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Title</label>
-                                    <p className="text-gray-800">{application.job_listing.title}</p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Title</label>
+                                    <p className="text-foreground">{application.job_listing.title}</p>
                                 </div>
                                 {application.job_listing.category && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-500">Category</label>
-                                        <p className="text-gray-800">{application.job_listing.category.name}</p>
+                                        <label className="text-muted-foreground block text-sm font-medium">Category</label>
+                                        <p className="text-foreground">{application.job_listing.category.name}</p>
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Description</label>
-                                    <p className="text-gray-800 whitespace-pre-line">
-                                        {application.job_listing.description}
-                                    </p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Description</label>
+                                    <p className="text-foreground whitespace-pre-line">{application.job_listing.description}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-500">Requirements</label>
-                                    <p className="text-gray-800 whitespace-pre-line">
-                                        {application.job_listing.requirements}
-                                    </p>
+                                    <label className="text-muted-foreground block text-sm font-medium">Requirements</label>
+                                    <p className="text-foreground whitespace-pre-line">{application.job_listing.requirements}</p>
                                 </div>
                             </div>
                         </div>
@@ -337,24 +338,18 @@ export default function ApplicationShow() {
                     {/* Sidebar */}
                     <div className="space-y-6">
                         {/* Status */}
-                        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Current Status</h3>
-                            <span
-                                className={`px-4 py-2 text-sm font-semibold rounded-full ${getStatusBadgeClass(
-                                    application.status
-                                )}`}
-                            >
+                        <div className="bg-card border-border rounded-lg border p-6 shadow-xs">
+                            <h3 className="text-foreground mb-4 text-lg font-semibold">Current Status</h3>
+                            <span className={`rounded-full px-4 py-2 text-sm font-semibold ${getStatusBadgeClass(application.status)}`}>
                                 {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                             </span>
 
                             <div className="mt-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Update Status
-                                </label>
+                                <label className="text-muted-foreground mb-2 block text-sm font-medium">Update Status</label>
                                 <select
                                     value={application.status}
                                     onChange={(e) => handleStatusUpdate(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="border-input focus-visible:ring-ring w-full rounded-lg border px-3 py-2 focus-visible:ring-2 focus-visible:ring-offset-2"
                                 >
                                     <option value="pending">Pending</option>
                                     <option value="shortlisted">Shortlisted</option>
@@ -366,36 +361,30 @@ export default function ApplicationShow() {
 
                         {/* Employer Notes */}
                         {application.employer_notes && (
-                            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Employer Notes</h3>
-                                <p className="text-gray-600 text-sm whitespace-pre-line">
-                                    {application.employer_notes}
-                                </p>
+                            <div className="bg-card border-border rounded-lg border p-6 shadow-xs">
+                                <h3 className="text-foreground mb-2 text-lg font-semibold">Employer Notes</h3>
+                                <p className="text-muted-foreground text-sm whitespace-pre-line">{application.employer_notes}</p>
                             </div>
                         )}
 
                         {/* Status History */}
                         {application.status_timelines.length > 0 && (
-                            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Status History</h3>
+                            <div className="bg-card border-border rounded-lg border p-6 shadow-xs">
+                                <h3 className="text-foreground mb-4 text-lg font-semibold">Status History</h3>
                                 <div className="space-y-3">
                                     {application.status_timelines.map((timeline) => (
-                                        <div key={timeline.id} className="border-l-2 border-blue-500 pl-4">
+                                        <div key={timeline.id} className="border-primary border-l-2 pl-4">
                                             <div className="flex items-center justify-between">
                                                 <span
-                                                    className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(
-                                                        timeline.status
-                                                    )}`}
+                                                    className={`rounded-full px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(timeline.status)}`}
                                                 >
                                                     {timeline.status}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-muted-foreground text-xs">
                                                     {new Date(timeline.created_at).toLocaleString()}
                                                 </span>
                                             </div>
-                                            {timeline.notes && (
-                                                <p className="text-sm text-gray-600 mt-1">{timeline.notes}</p>
-                                            )}
+                                            {timeline.notes && <p className="text-muted-foreground mt-1 text-sm">{timeline.notes}</p>}
                                         </div>
                                     ))}
                                 </div>

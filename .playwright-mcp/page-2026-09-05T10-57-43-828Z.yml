@@ -1,0 +1,97 @@
+- generic [ref=f4e3]:
+  - generic [ref=f4e7]:
+    - list [ref=f4e9]:
+      - listitem [ref=f4e10]:
+        - link "ATS System" [ref=f4e11] [cursor=pointer]:
+          - /url: /ats
+    - generic [ref=f4e18]:
+      - generic [ref=f4e19]: ATS
+      - list [ref=f4e20]:
+        - listitem [ref=f4e21]:
+          - link "Dashboard" [ref=f4e22] [cursor=pointer]:
+            - /url: /ats
+        - listitem [ref=f4e29]:
+          - link "Applications" [ref=f4e30] [cursor=pointer]:
+            - /url: /ats/applications
+        - listitem [ref=f4e37]:
+          - link "Jobs" [ref=f4e38] [cursor=pointer]:
+            - /url: /ats/jobs
+  - main [ref=f4e43]:
+    - generic [ref=f4e45]:
+      - button "Toggle Sidebar" [ref=f4e46]
+      - navigation "breadcrumb" [ref=f4e48]:
+        - list [ref=f4e49]:
+          - listitem [ref=f4e50]:
+            - link "ATS" [ref=f4e51] [cursor=pointer]:
+              - /url: /ats
+          - listitem [aria-hidden] [ref=f4e52]
+          - listitem [ref=f4e55]:
+            - link "Jobs" [ref=f4e56] [cursor=pointer]:
+              - /url: /ats/jobs
+          - listitem [aria-hidden] [ref=f4e57]
+          - listitem [ref=f4e60]:
+            - link "Apply" [disabled] [ref=f4e61]
+    - generic [ref=f4e62]:
+      - generic [ref=f4e63]:
+        - heading "Test the ATS with your own CV" [level=2] [ref=f4e64]
+        - paragraph [ref=f4e65]:
+          - text: Fill in your details, upload your CV (PDF, DOC or DOCX), and the ATS will score how well it matches
+          - link "Senior Full Stack Developer" [ref=f4e66] [cursor=pointer]:
+            - /url: /ats/jobs/1/applications
+          - text: .
+      - generic [ref=f4e67]:
+        - generic [ref=f4e68]:
+          - generic [ref=f4e69]:
+            - generic [ref=f4e70]: Senior Full Stack Developer
+            - generic [ref=f4e71]: Engineering · Berlin
+          - generic [ref=f4e72]:
+            - generic [ref=f4e73]:
+              - generic [ref=f4e74]: Full Time
+              - generic [ref=f4e75]: Active
+            - generic [ref=f4e76]:
+              - heading "About this role" [level=3] [ref=f4e77]
+              - paragraph [ref=f4e78]: We are looking for an experienced Full Stack Developer to join our team.
+            - generic [ref=f4e79]:
+              - heading "What we are looking for" [level=3] [ref=f4e80]
+              - paragraph [ref=f4e81]: 5+ years experience with React, Node.js, TypeScript, PostgreSQL
+            - generic [ref=f4e82]:
+              - heading "Tracked keywords" [level=3] [ref=f4e83]
+              - generic [ref=f4e84]: "[\"react\",\"nodejs\",\"typescript\",\"postgresql\",\"aws\",\"docker\",\"git\",\"agile\",\"rest api\",\"graphql\"]"
+        - generic [ref=f4e86]:
+          - generic [ref=f4e87]:
+            - generic [ref=f4e88]: Your application
+            - generic [ref=f4e89]: Your CV is scored against the tracked keywords for this role.
+          - generic [ref=f4e91]:
+            - generic [ref=f4e92]:
+              - generic [ref=f4e93]:
+                - text: Full name
+                - textbox "Full name" [ref=f4e94]:
+                  - /placeholder: Jane Doe
+              - generic [ref=f4e95]:
+                - text: Email
+                - textbox "Email" [ref=f4e96]:
+                  - /placeholder: jane@example.com
+              - generic [ref=f4e97]:
+                - text: Phone (optional)
+                - textbox "Phone (optional)" [ref=f4e98]:
+                  - /placeholder: +1 555-0100
+              - generic [ref=f4e99]:
+                - text: Years of experience
+                - spinbutton "Years of experience" [ref=f4e100]
+              - generic [ref=f4e101]:
+                - text: Highest education
+                - combobox "Highest education" [ref=f4e102]:
+                  - option "High School"
+                  - option "Associate Degree"
+                  - option "Bachelor's Degree" [selected]
+                  - option "Master's Degree"
+                  - option "PhD"
+              - generic [ref=f4e103]:
+                - text: Expected salary ($USD, optional)
+                - spinbutton "Expected salary ($USD, optional)" [ref=f4e104]
+              - generic [ref=f4e105]:
+                - text: CV / Resume (PDF, DOC or DOCX · max 5 MB)
+                - button "CV / Resume (PDF, DOC or DOCX · max 5 MB)" [ref=f4e106]
+            - generic [ref=f4e107]:
+              - button "Cancel" [ref=f4e108]
+              - button "Test my CV · Get ATS Score" [ref=f4e109]

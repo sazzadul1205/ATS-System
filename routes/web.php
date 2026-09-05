@@ -26,3 +26,7 @@ Route::post('/ats/applications/{id}/recalculate-ats', [ATSController::class, 're
 // Jobs
 Route::get('/ats/jobs', [ATSController::class, 'jobs'])->name('ats.jobs.index');
 Route::get('/ats/jobs/{jobId}/applications', [ATSController::class, 'jobApplications'])->name('ats.jobs.applications');
+
+// Public apply flow – lets testers upload their own CV and run the ATS
+Route::get('/ats/jobs/{jobId}/apply', [ATSController::class, 'applyForm'])->name('ats.jobs.apply');
+Route::post('/ats/jobs/{jobId}/apply', [ATSController::class, 'storeApplication'])->name('ats.jobs.apply.store');
