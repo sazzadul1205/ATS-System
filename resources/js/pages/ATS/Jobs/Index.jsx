@@ -1,66 +1,19 @@
-import { Button } from '@/components/ui/button';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import AppLayout from '@/layouts/AppLayout';
 import { Head, router, usePage } from '@inertiajs/react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'ATS',
-        href: '/ats',
-    },
-    {
-        title: 'Jobs',
-        href: '/ats/jobs',
-    },
-];
-
-interface JobCategory {
-    id: number;
-    name: string;
-}
-
-interface Location {
-    id: number;
-    name: string;
-    country: string;
-}
-
-interface Job {
-    id: number;
-    title: string;
-    description: string;
-    requirements: string;
-    is_active: boolean;
-    category?: JobCategory;
-    locations?: Location[];
-    applications_count: number;
-    created_at: string;
-}
-
-interface JobsIndexProps {
-    jobs: {
-        data: Job[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-        links: { url: string | null; label: string; active: boolean }[];
-    };
-    [key: string]: unknown;
-}
 
 export default function JobsIndex() {
-    const { props } = usePage<JobsIndexProps>();
+    const { props } = usePage();
     const { jobs } = props;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Jobs" />
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-foreground text-3xl font-bold">Jobs</h2>
-                        <p className="text-muted-foreground mt-1">Manage job postings and track applications</p>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Jobs</h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage job postings and track applications</p>
                     </div>
                 </div>
 
@@ -69,65 +22,62 @@ export default function JobsIndex() {
                     {jobs.data.map((job) => (
                         <div
                             key={job.id}
-                            className="bg-card border-border cursor-pointer rounded-lg border p-6 shadow-xs transition-shadow hover:shadow-xs"
+                            className="cursor-pointer rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
                             onClick={() => router.visit(`/ats/jobs/${job.id}/applications`)}
                         >
                             <div className="mb-4 flex items-start justify-between">
                                 <div>
-                                    <h3 className="text-foreground text-xl font-semibold">{job.title}</h3>
-                                    {job.category && <p className="text-muted-foreground">{job.category.name}</p>}
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{job.title}</h3>
+                                    {job.category && <p className="text-sm text-gray-600 dark:text-gray-400">{job.category.name}</p>}
                                 </div>
                                 <span
-                                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                                        job.is_active
-                                            ? 'border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                                            : 'bg-destructive/15 text-destructive border-transparent'
-                                    }`}
+                                    className={`rounded-full px-2 py-1 text-xs font-semibold ${job.is_active
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                        }`}
                                 >
                                     {job.is_active ? 'Active' : 'Closed'}
                                 </span>
                             </div>
 
                             <div className="mb-4 space-y-2">
-                                <div className="text-muted-foreground flex items-center text-sm">
+                                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                     <span className="mr-2 font-medium">Applications:</span>
                                     {job.applications_count}
                                 </div>
-                                <div className="text-muted-foreground flex items-center text-sm">
+                                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                     <span className="mr-2 font-medium">Posted:</span>
                                     {new Date(job.created_at).toLocaleDateString()}
                                 </div>
                                 {job.locations && job.locations.length > 0 && (
-                                    <div className="text-muted-foreground flex items-center text-sm">
+                                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                         <span className="mr-2 font-medium">Locations:</span>
                                         {job.locations.map((loc) => loc.name).join(', ')}
                                     </div>
                                 )}
                             </div>
 
-                            <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">{job.description}</p>
+                            <p className="mb-4 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{job.description}</p>
 
-                            <div className="border-border space-y-2 border-t pt-4">
-                                <Button
-                                    variant="default"
-                                    className="w-full"
+                            <div className="space-y-2 border-t border-gray-200 pt-4 dark:border-gray-700">
+                                <button
+                                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:bg-indigo-500 dark:hover:bg-indigo-600"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         router.visit(`/ats/jobs/${job.id}/apply`);
                                     }}
                                 >
                                     Test ATS · Apply with my CV
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    className="w-full"
+                                </button>
+                                <button
+                                    className="w-full rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         router.visit(`/ats/jobs/${job.id}/applications`);
                                     }}
                                 >
                                     View Applications ({job.applications_count})
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -141,9 +91,10 @@ export default function JobsIndex() {
                                 key={index}
                                 disabled={!link.url}
                                 onClick={() => link.url && router.visit(link.url)}
-                                className={`rounded px-4 py-2 ${
-                                    link.active ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
-                                } disabled:opacity-50`}
+                                className={`rounded-md px-4 py-2 text-sm font-medium ${link.active
+                                        ? 'bg-indigo-600 text-white dark:bg-indigo-500'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
+                                    } disabled:cursor-not-allowed disabled:opacity-50`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}
@@ -152,8 +103,8 @@ export default function JobsIndex() {
 
                 {jobs.data.length === 0 && (
                     <div className="py-12 text-center">
-                        <h3 className="text-foreground text-lg font-medium">No jobs found</h3>
-                        <p className="text-muted-foreground mt-1">Create a new job posting to get started</p>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">No jobs found</h3>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Create a new job posting to get started</p>
                     </div>
                 )}
             </div>

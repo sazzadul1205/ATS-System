@@ -115,5 +115,5 @@
         },
         "jsx": "react-jsx"
     },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx"]
+    "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx", "resources/js/pages/ATS/Dashboard.jsx", "resources/js/pages/ATS/Apply.jsx", "resources/js/pages/ATS/Jobs/Applications.jsx", "resources/js/pages/ATS/Jobs/Index.jsx", "resources/js/pages/ATS/Applications/Index.jsx", "resources/js/pages/ATS/Applications/Show.jsx"]
 }
