@@ -119,41 +119,6 @@ class ApplicantProfile extends Model
             ->where('is_primary', true);
     }
 
-    /**
-     * Work history relation
-     */
-    public function jobHistories(): HasMany
-    {
-        return $this->hasMany(JobHistory::class)
-            ->orderBy('starting_year', 'desc');
-    }
-
-    /**
-     * Current job relation
-     */
-    public function currentJob(): HasOne
-    {
-        return $this->hasOne(JobHistory::class)
-            ->where('is_current', true);
-    }
-
-    /**
-     * Education history relation
-     */
-    public function educationHistories(): HasMany
-    {
-        return $this->hasMany(EducationHistory::class)
-            ->orderBy('passing_year', 'desc');
-    }
-
-    /**
-     * Achievements relation
-     */
-    public function achievements(): HasMany
-    {
-        return $this->hasMany(Achievement::class);
-    }
-
     /* ==========================================
      | ACCESSORS
      |========================================== */

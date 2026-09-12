@@ -1,6 +1,23 @@
 import AppLayout from '@/layouts/AppLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-
+import {
+    ArrowLeft,
+    User,
+    Mail,
+    Phone,
+    Briefcase,
+    GraduationCap,
+    DollarSign,
+    Upload,
+    FileText,
+    X,
+    MapPin,
+    Tag,
+    CheckCircle,
+    AlertCircle,
+    Target,
+    RefreshCw,
+} from 'lucide-react';
 
 const educationLevels = [
     { value: 'high_school', label: 'High School' },
@@ -35,14 +52,26 @@ export default function Apply({ job }) {
             <Head title="Test ATS with your CV" />
 
             <div className="space-y-6">
+                {/* Back Button */}
+                <button
+                    onClick={() => router.visit('/ats/jobs')}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Jobs
+                </button>
+
                 {/* Header */}
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Test the ATS with your own CV</h2>
+                    <h2 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+                        <FileText className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                        Test the ATS with your own CV
+                    </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                         Fill in your details, upload your CV (PDF, DOC or DOCX), and the ATS will score how well it matches{' '}
                         <Link
                             href={`/ats/jobs/${job.id}/applications`}
-                            className="text-indigo-600 underline-offset-4 hover:underline dark:text-indigo-400"
+                            className="font-medium text-indigo-600 underline-offset-4 hover:underline dark:text-indigo-400"
                         >
                             {job.title}
                         </Link>
@@ -56,18 +85,30 @@ export default function Apply({ job }) {
                         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 lg:col-span-1">
                             <div className="mb-4">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{job.title}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {job.category ? job.category : ''}
-                                    {job.locations.length > 0 ? ` · ${job.locations.join(', ')}` : ''}
-                                </p>
+                                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    {job.category && (
+                                        <span className="inline-flex items-center gap-1">
+                                            <Tag className="h-3.5 w-3.5" />
+                                            {job.category}
+                                        </span>
+                                    )}
+                                    {job.locations.length > 0 && (
+                                        <span className="inline-flex items-center gap-1">
+                                            <MapPin className="h-3.5 w-3.5" />
+                                            {job.locations.join(', ')}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                        <Briefcase className="h-3 w-3" />
                                         {job.job_type}
                                     </span>
-                                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                        <CheckCircle className="h-3 w-3" />
                                         Active
                                     </span>
                                 </div>
@@ -88,7 +129,10 @@ export default function Apply({ job }) {
 
                                 {job.keywords.length > 0 && (
                                     <div>
-                                        <h4 className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Tracked keywords</h4>
+                                        <h4 className="mb-2 flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+                                            <Tag className="h-3.5 w-3.5" />
+                                            Tracked keywords
+                                        </h4>
                                         <div className="flex flex-wrap gap-1.5">
                                             {job.keywords.map((keyword) => (
                                                 <span
@@ -108,14 +152,17 @@ export default function Apply({ job }) {
                         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 lg:col-span-2">
                             <div className="mb-4">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Your application</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Your CV is scored against the tracked keywords for this role.</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Your CV is scored against the tracked keywords for this role.
+                                </p>
                             </div>
 
                             <form onSubmit={submit} className="space-y-4" encType="multipart/form-data">
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     {/* Name */}
                                     <div className="space-y-2">
-                                        <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="name" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <User className="h-3.5 w-3.5" />
                                             Full name
                                         </label>
                                         <input
@@ -131,7 +178,8 @@ export default function Apply({ job }) {
 
                                     {/* Email */}
                                     <div className="space-y-2">
-                                        <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="email" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <Mail className="h-3.5 w-3.5" />
                                             Email
                                         </label>
                                         <input
@@ -147,7 +195,8 @@ export default function Apply({ job }) {
 
                                     {/* Phone */}
                                     <div className="space-y-2">
-                                        <label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="phone" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <Phone className="h-3.5 w-3.5" />
                                             Phone (optional)
                                         </label>
                                         <input
@@ -163,7 +212,8 @@ export default function Apply({ job }) {
 
                                     {/* Years of Experience */}
                                     <div className="space-y-2">
-                                        <label htmlFor="years_of_experience" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="years_of_experience" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <Briefcase className="h-3.5 w-3.5" />
                                             Years of experience
                                         </label>
                                         <input
@@ -181,7 +231,8 @@ export default function Apply({ job }) {
 
                                     {/* Education Level */}
                                     <div className="space-y-2">
-                                        <label htmlFor="education_level" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="education_level" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <GraduationCap className="h-3.5 w-3.5" />
                                             Highest education
                                         </label>
                                         <select
@@ -201,7 +252,8 @@ export default function Apply({ job }) {
 
                                     {/* Expected Salary */}
                                     <div className="space-y-2">
-                                        <label htmlFor="expected_salary" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="expected_salary" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <DollarSign className="h-3.5 w-3.5" />
                                             Expected salary ($USD, optional)
                                         </label>
                                         <input
@@ -218,14 +270,16 @@ export default function Apply({ job }) {
 
                                     {/* CV Upload */}
                                     <div className="space-y-2 md:col-span-2">
-                                        <label htmlFor="cv" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label htmlFor="cv" className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <Upload className="h-3.5 w-3.5" />
                                             CV / Resume (PDF, DOC or DOCX · max 5 MB)
                                         </label>
                                         <div className="flex items-center gap-3 rounded-md border border-gray-300 bg-white p-2 dark:border-gray-600 dark:bg-gray-800">
                                             <label
                                                 htmlFor="cv"
-                                                className="inline-flex h-9 cursor-pointer items-center rounded-md bg-gray-100 px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                                                className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-gray-100 px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                                             >
+                                                <Upload className="h-4 w-4" />
                                                 Choose file
                                             </label>
                                             <input
@@ -242,8 +296,9 @@ export default function Apply({ job }) {
                                                 <button
                                                     type="button"
                                                     onClick={() => setData('cv', null)}
-                                                    className="rounded-md px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                                                    className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                                                 >
+                                                    <X className="h-3.5 w-3.5" />
                                                     Remove
                                                 </button>
                                             )}
@@ -264,9 +319,19 @@ export default function Apply({ job }) {
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                                        className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                                     >
-                                        {processing ? 'Scoring your CV...' : 'Test my CV · Get ATS Score'}
+                                        {processing ? (
+                                            <>
+                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                Scoring your CV...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Target className="h-4 w-4" />
+                                                Test my CV · Get ATS Score
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -276,7 +341,8 @@ export default function Apply({ job }) {
                     /* Job Inactive Message */
                     <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <div className="py-10">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <AlertCircle className="mx-auto h-12 w-12 text-amber-500 dark:text-amber-400" />
+                            <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
                                 This job is no longer accepting applications
                             </h3>
                             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -284,8 +350,9 @@ export default function Apply({ job }) {
                             </p>
                             <button
                                 onClick={() => router.visit('/ats/jobs')}
-                                className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                                className="mt-4 inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                             >
+                                <Briefcase className="h-4 w-4" />
                                 Browse jobs
                             </button>
                         </div>

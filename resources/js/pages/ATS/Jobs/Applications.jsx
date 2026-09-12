@@ -1,5 +1,18 @@
 import AppLayout from '@/layouts/AppLayout';
 import { Head, router, usePage } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    Eye,
+    CheckCircle,
+    XCircle,
+    Users,
+    Clock,
+    UserCheck,
+    Briefcase,
+    GraduationCap,
+    Filter,
+    Search,
+} from 'lucide-react';
 
 export default function JobApplications() {
     const { props } = usePage();
@@ -45,9 +58,21 @@ export default function JobApplications() {
         <AppLayout>
             <Head title={`${job.title} - Applications`} />
             <div className="space-y-6">
+                {/* Back Button */}
+                <button
+                    onClick={() => router.visit('/ats/jobs')}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Jobs
+                </button>
+
                 {/* Header */}
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{job.title}</h2>
+                    <h2 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+                        <Users className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                        {job.title}
+                    </h2>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                         {job.category && `${job.category.name} • `}
                         {applications.total} applications
@@ -63,8 +88,11 @@ export default function JobApplications() {
                                 : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800'
                             }`}
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">All</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{applications.total}</p>
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-gray-500" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">All</p>
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{applications.total}</p>
                     </button>
                     <button
                         onClick={() => handleStatusFilter('pending')}
@@ -73,8 +101,11 @@ export default function JobApplications() {
                                 : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800'
                             }`}
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{statusCounts.pending}</p>
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-amber-500" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{statusCounts.pending}</p>
                     </button>
                     <button
                         onClick={() => handleStatusFilter('shortlisted')}
@@ -83,8 +114,11 @@ export default function JobApplications() {
                                 : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800'
                             }`}
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Shortlisted</p>
-                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statusCounts.shortlisted}</p>
+                        <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-emerald-500" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Shortlisted</p>
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statusCounts.shortlisted}</p>
                     </button>
                     <button
                         onClick={() => handleStatusFilter('hired')}
@@ -93,8 +127,11 @@ export default function JobApplications() {
                                 : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800'
                             }`}
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Hired</p>
-                        <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">{statusCounts.hired}</p>
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-sky-500" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Hired</p>
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-sky-600 dark:text-sky-400">{statusCounts.hired}</p>
                     </button>
                 </div>
 
@@ -146,10 +183,20 @@ export default function JobApplications() {
                                             </div>
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4">
-                                            <div className="text-sm text-gray-900 dark:text-white">
-                                                {app.years_of_experience ? `${app.years_of_experience} yrs` : 'N/A'}
+                                            <div className="flex items-center gap-2">
+                                                <Briefcase className="h-4 w-4 text-gray-400" />
+                                                <div>
+                                                    <div className="text-sm text-gray-900 dark:text-white">
+                                                        {app.years_of_experience ? `${app.years_of_experience} yrs` : 'N/A'}
+                                                    </div>
+                                                    {app.education_level && (
+                                                        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                                                            <GraduationCap className="h-3 w-3" />
+                                                            {app.education_level}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            {app.education_level && <div className="text-xs text-gray-600 dark:text-gray-400">{app.education_level}</div>}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4">
                                             <span
@@ -164,26 +211,29 @@ export default function JobApplications() {
                                             {new Date(app.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-3">
                                                 <button
                                                     onClick={() => router.visit(`/ats/applications/${app.id}`)}
-                                                    className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                    title="View"
                                                 >
-                                                    View
+                                                    <Eye className="h-4 w-4" />
                                                 </button>
                                                 {app.can_update && (
                                                     <>
                                                         <button
                                                             onClick={() => handleStatusUpdate(app.id, 'shortlisted')}
-                                                            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                                                            className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                                                            title="Shortlist"
                                                         >
-                                                            Shortlist
+                                                            <CheckCircle className="h-4 w-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleStatusUpdate(app.id, 'rejected')}
-                                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                                            className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                                            title="Reject"
                                                         >
-                                                            Reject
+                                                            <XCircle className="h-4 w-4" />
                                                         </button>
                                                     </>
                                                 )}
@@ -216,7 +266,8 @@ export default function JobApplications() {
 
                 {applications.data.length === 0 && (
                     <div className="py-12 text-center">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">No applications found</h3>
+                        <Users className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
+                        <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No applications found</h3>
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                             {filters.status ? `No ${filters.status} applications for this job` : 'No applications yet for this job'}
                         </p>

@@ -16,7 +16,7 @@ export default function Sidebar() {
   const { url } = usePage();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Theme toggle (simple fallback)
+  // Theme toggle
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('theme');
@@ -36,12 +36,55 @@ export default function Sidebar() {
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);
 
-  const isActive = (href) => url.startsWith(href);
+  /**
+   * Normalize any URL (full or relative) to a clean pathname:
+   * - strips domain
+   * - strips query string + hash
+   * - strips trailing slash
+   */
+  const normalize = (u) => {
+    if (!u) return '';
+    const path = u.startsWith('http') ? new URL(u).pathname : u;
+    return path.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+  };
+
+  /**
+   * Active check with special case for the dashboard/home route.
+   *
+   * The dashboard lives at `/ats` (and `/`). Since every other nav item
+   * is a sub-path of `/ats`, we need an EXACT match for the dashboard —
+   * otherwise it would highlight on every page.
+   */
+  const isActive = (href, exact = false) => {
+    const path = normalize(href);
+    const currentPath = normalize(url);
+
+    if (exact) {
+      return currentPath === path;
+    }
+
+    return currentPath === path || currentPath.startsWith(path + '/');
+  };
 
   const navigation = [
-    { name: 'Dashboard', href: route('ats.dashboard'), icon: LayoutDashboard },
-    { name: 'Applications', href: route('ats.applications.index'), icon: FileText },
-    { name: 'Jobs', href: route('ats.jobs.index'), icon: Briefcase },
+    {
+      name: 'Dashboard',
+      href: route('ats.dashboard'), // "/ats"
+      icon: LayoutDashboard,
+      exact: true, // 👈 don't match /ats/applications, /ats/jobs, etc.
+    },
+    {
+      name: 'Applications',
+      href: route('ats.applications.index'), // "/ats/applications"
+      icon: FileText,
+      exact: false, // matches /ats/applications/123 too
+    },
+    {
+      name: 'Jobs',
+      href: route('ats.jobs.index'), // "/ats/jobs"
+      icon: Briefcase,
+      exact: false, // matches /ats/jobs/42/applications too
+    },
   ];
 
   return (
@@ -67,11 +110,11 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-                    fixed top-0 left-0 z-50 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
-                    transform transition-transform duration-300 ease-in-out
-                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:translate-x-0 lg:static lg:z-auto
-                `}
+          fixed top-0 left-0 z-50 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 lg:static lg:z-auto
+        `}
       >
         <div className="flex h-full flex-col">
           {/* Logo / Brand */}
@@ -95,20 +138,30 @@ export default function Sidebar() {
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4">
             {navigation.map((item) => {
-              const active = isActive(item.href);
+              const active = isActive(item.href, item.exact);
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={`
-                                        flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                        ${active
+                    relative flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                    ${active
                       ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
-                                    `}
+                  `}
                   onClick={closeSidebar}
                 >
+                  {/* Active left indicator bar */}
+                  <span
+                    className={`
+                      absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full
+                      bg-indigo-600 dark:bg-indigo-400
+                      transition-all duration-200
+                      ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}
+                    `}
+                    aria-hidden="true"
+                  />
                   <item.icon
                     className={`mr-3 h-5 w-5 ${active
                         ? 'text-indigo-600 dark:text-indigo-400'
@@ -145,7 +198,6 @@ export default function Sidebar() {
                 {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
             </div>
-            {/* Optional logout button */}
             <button className="mt-3 flex w-full items-center rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
               <LogOut className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
               Logout

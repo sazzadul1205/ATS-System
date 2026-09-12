@@ -1,6 +1,15 @@
 import AppLayout from '@/layouts/AppLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-
+import {
+    Briefcase,
+    MapPin,
+    Calendar,
+    Users,
+    FileText,
+    Eye,
+    CheckCircle,
+    XCircle,
+} from 'lucide-react';
 
 export default function JobsIndex() {
     const { props } = usePage();
@@ -12,7 +21,10 @@ export default function JobsIndex() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Jobs</h2>
+                        <h2 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+                            <Briefcase className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                            Jobs
+                        </h2>
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage job postings and track applications</p>
                     </div>
                 </div>
@@ -31,27 +43,31 @@ export default function JobsIndex() {
                                     {job.category && <p className="text-sm text-gray-600 dark:text-gray-400">{job.category.name}</p>}
                                 </div>
                                 <span
-                                    className={`rounded-full px-2 py-1 text-xs font-semibold ${job.is_active
+                                    className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${job.is_active
                                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
                                             : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                         }`}
                                 >
+                                    {job.is_active ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                                     {job.is_active ? 'Active' : 'Closed'}
                                 </span>
                             </div>
 
                             <div className="mb-4 space-y-2">
-                                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                    <span className="mr-2 font-medium">Applications:</span>
+                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <Users className="h-4 w-4" />
+                                    <span className="font-medium">Applications:</span>
                                     {job.applications_count}
                                 </div>
-                                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                    <span className="mr-2 font-medium">Posted:</span>
+                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <Calendar className="h-4 w-4" />
+                                    <span className="font-medium">Posted:</span>
                                     {new Date(job.created_at).toLocaleDateString()}
                                 </div>
                                 {job.locations && job.locations.length > 0 && (
-                                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                        <span className="mr-2 font-medium">Locations:</span>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <MapPin className="h-4 w-4" />
+                                        <span className="font-medium">Locations:</span>
                                         {job.locations.map((loc) => loc.name).join(', ')}
                                     </div>
                                 )}
@@ -61,21 +77,23 @@ export default function JobsIndex() {
 
                             <div className="space-y-2 border-t border-gray-200 pt-4 dark:border-gray-700">
                                 <button
-                                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:bg-indigo-500 dark:hover:bg-indigo-600"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         router.visit(`/ats/jobs/${job.id}/apply`);
                                     }}
                                 >
+                                    <FileText className="h-4 w-4" />
                                     Test ATS · Apply with my CV
                                 </button>
                                 <button
-                                    className="w-full rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         router.visit(`/ats/jobs/${job.id}/applications`);
                                     }}
                                 >
+                                    <Eye className="h-4 w-4" />
                                     View Applications ({job.applications_count})
                                 </button>
                             </div>
@@ -103,7 +121,8 @@ export default function JobsIndex() {
 
                 {jobs.data.length === 0 && (
                     <div className="py-12 text-center">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">No jobs found</h3>
+                        <Briefcase className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
+                        <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No jobs found</h3>
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Create a new job posting to get started</p>
                     </div>
                 )}

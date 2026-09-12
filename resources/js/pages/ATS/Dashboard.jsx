@@ -1,15 +1,27 @@
 import AppLayout from '@/layouts/AppLayout';
 import { Head, usePage } from '@inertiajs/react';
+import {
+    BarChart3,
+    Users,
+    Clock,
+    UserCheck,
+    UserX,
+    TrendingUp,
+    Award,
+    Target,
+    Briefcase,
+    Calendar,
+} from 'lucide-react';
 
 export default function ATSDashboard() {
     const { props } = usePage();
     const { statusCounts, atsStats, recentApplications, topJobs } = props;
 
     const stats = [
-        { label: 'Total Applications', value: statusCounts.total, color: 'text-indigo-600 dark:text-indigo-400' },
-        { label: 'Pending', value: statusCounts.pending, color: 'text-amber-600 dark:text-amber-400' },
-        { label: 'Shortlisted', value: statusCounts.shortlisted, color: 'text-emerald-600 dark:text-emerald-400' },
-        { label: 'Rejected', value: statusCounts.rejected, color: 'text-red-600 dark:text-red-400' },
+        { label: 'Total Applications', value: statusCounts.total, color: 'text-indigo-600 dark:text-indigo-400', icon: Users },
+        { label: 'Pending', value: statusCounts.pending, color: 'text-amber-600 dark:text-amber-400', icon: Clock },
+        { label: 'Shortlisted', value: statusCounts.shortlisted, color: 'text-emerald-600 dark:text-emerald-400', icon: UserCheck },
+        { label: 'Rejected', value: statusCounts.rejected, color: 'text-red-600 dark:text-red-400', icon: UserX },
     ];
 
     const getStatusBadgeClass = (status) => {
@@ -39,33 +51,57 @@ export default function ATSDashboard() {
             <div className="space-y-6">
                 {/* Header */}
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">ATS Dashboard</h2>
+                    <h2 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+                        <BarChart3 className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                        ATS Dashboard
+                    </h2>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Overview of your Applicant Tracking System</p>
                 </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    {stats.map((stat, index) => (
-                        <div key={index} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
-                            <p className={`mt-2 text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-                        </div>
-                    ))}
+                    {stats.map((stat, index) => {
+                        const Icon = stat.icon;
+                        return (
+                            <div
+                                key={index}
+                                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
+                                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                                </div>
+                                <p className={`mt-2 text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* ATS Score Stats */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">ATS Score Statistics</h3>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
+                        <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        ATS Score Statistics
+                    </h3>
                     <div className="grid grid-cols-3 gap-4">
                         <div className="text-center">
+                            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/30">
+                                <TrendingUp className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                            </div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Average Score</p>
                             <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">{atsStats.avg}%</p>
                         </div>
                         <div className="text-center">
+                            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                                <BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            </div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Minimum Score</p>
                             <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{atsStats.min}%</p>
                         </div>
                         <div className="text-center">
+                            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                <Award className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Maximum Score</p>
                             <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{atsStats.max}%</p>
                         </div>
@@ -74,7 +110,10 @@ export default function ATSDashboard() {
 
                 {/* Top Jobs */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Top Jobs by Applications</h3>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
+                        <Briefcase className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        Top Jobs by Applications
+                    </h3>
                     <div className="space-y-3">
                         {topJobs.map((job) => (
                             <div
@@ -92,7 +131,10 @@ export default function ATSDashboard() {
 
                 {/* Recent Applications */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Recent Applications</h3>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
+                        <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        Recent Applications
+                    </h3>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead className="bg-gray-50 dark:bg-gray-800/50">

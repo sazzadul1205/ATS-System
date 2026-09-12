@@ -5,10 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use App\Models\JobListing;
 use App\Models\StatusTimeline;
+use App\Notifications\ApplicationStatusUpdated;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use ZipArchive;
@@ -16,74 +20,95 @@ use ZipArchive;
 class ATSController extends Controller
 {
     /**
-     * Display ATS dashboard with applications overview
+     * Display ATS dashboard with applications overview.
      */
     public function dashboard(Request $request): Response
     {
-        // Status counts
-        $statusCounts = [
-            'pending' => Application::where('status', 'pending')->count(),
-            'shortlisted' => Application::where('status', 'shortlisted')->count(),
-            'rejected' => Application::where('status', 'rejected')->count(),
-            'hired' => Application::where('status', 'hired')->count(),
-            'total' => Application::count(),
-        ];
+        $statusCounts = Cache::remember(
+            'ats:status-counts',
+            30,
+            fn() => Application::statusCounts()
+        );
 
-        // ATS Stats
-        $atsStats = Application::selectRaw("
-            AVG(CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED)) as avg_ats,
-            MIN(CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED)) as min_ats,
-            MAX(CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED)) as max_ats
-        ")->first();
+        $atsStats = Cache::remember('ats:score-stats', 60, function () {
+            $row = Application::query()
+                ->whereNotNull('ats_score_percentage')
+                ->selectRaw('AVG(ats_score_percentage) as avg_ats')
+                ->selectRaw('MIN(ats_score_percentage) as min_ats')
+                ->selectRaw('MAX(ats_score_percentage) as max_ats')
+                ->first();
 
-        // Recent applications
-        $recentApplications = Application::with(['jobListing', 'applicantProfile'])
-            ->orderBy('created_at', 'desc')
+            return [
+                'avg' => round((float) ($row->avg_ats ?? 0), 2),
+                'min' => (int) ($row->min_ats ?? 0),
+                'max' => (int) ($row->max_ats ?? 0),
+            ];
+        });
+
+        $recentApplications = Application::query()
+            ->select([
+                'id',
+                'name',
+                'email',
+                'job_listing_id',
+                'status',
+                'ats_score_percentage',
+                'created_at',
+            ])
+            ->with(['jobListing:id,title'])
+            ->latest()
             ->limit(10)
             ->get()
-            ->map(function ($app) {
-                return [
-                    'id' => $app->id,
-                    'name' => $app->name,
-                    'email' => $app->email,
-                    'job_title' => $app->jobListing?->title ?? 'N/A',
-                    'status' => $app->status,
-                    'ats_score' => $app->ats_score_percentage ?? 0,
-                    'created_at' => $app->created_at->diffForHumans(),
-                ];
-            });
+            ->map(fn($app) => [
+                'id'         => $app->id,
+                'name'       => $app->name,
+                'email'      => $app->email,
+                'job_title'  => $app->jobListing?->title ?? 'N/A',
+                'status'     => $app->status,
+                'ats_score'  => $app->ats_score_percentage ?? 0,
+                'created_at' => $app->created_at->diffForHumans(),
+            ]);
 
-        // Job listings with application counts
-        $jobsWithApps = JobListing::withCount('applications')
+        $topJobs = JobListing::query()
+            ->select(['id', 'title', 'is_active'])
+            ->withCount('applications')
             ->where('is_active', true)
             ->orderByDesc('applications_count')
             ->limit(5)
-            ->get(['id', 'title', 'is_active']);
+            ->get();
 
         return Inertia::render('ATS/Dashboard', [
-            'statusCounts' => $statusCounts,
-            'atsStats' => [
-                'avg' => round($atsStats->avg_ats ?? 0, 2),
-                'min' => $atsStats->min_ats ?? 0,
-                'max' => $atsStats->max_ats ?? 0,
-            ],
+            'statusCounts'       => $statusCounts,
+            'atsStats'           => $atsStats,
             'recentApplications' => $recentApplications,
-            'topJobs' => $jobsWithApps,
+            'topJobs'            => $topJobs,
         ]);
     }
 
     /**
-     * Display all applications with filtering
+     * Display all applications with filtering.
      */
     public function applications(Request $request): Response
     {
-        $query = Application::with([
-            'jobListing' => fn ($q) => $q->with(['category', 'locations']),
-            'applicantProfile.user',
-            'statusTimelines',
-        ]);
+        $query = Application::query()
+            ->select([
+                'id',
+                'name',
+                'email',
+                'phone',
+                'job_listing_id',
+                'status',
+                'ats_score_percentage',
+                'years_of_experience',
+                'education_level',
+                'expected_salary',
+                'created_at',
+            ])
+            ->with([
+                'jobListing:id,title,category_id',
+                'jobListing.category:id,name',
+            ]);
 
-        // Apply filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -101,69 +126,52 @@ class ATSController extends Controller
         }
 
         if ($request->filled('min_ats_score')) {
-            $query->whereRaw("CAST(JSON_EXTRACT(ats_score, '$.percentage') AS UNSIGNED) >= ?", [$request->min_ats_score]);
+            $query->where('ats_score_percentage', '>=', (int) $request->min_ats_score);
         }
 
-        $perPage = $request->input('per_page', 15);
-        $applications = $query->paginate($perPage)->withQueryString();
+        $perPage = (int) $request->input('per_page', 15);
+        $applications = $query->latest()->paginate($perPage)->withQueryString();
 
-        // Transform for frontend
-        $applications->getCollection()->transform(function ($app) {
-            return [
-                'id' => $app->id,
-                'name' => $app->name,
-                'email' => $app->email,
-                'phone' => $app->phone,
-                'job' => [
-                    'id' => $app->jobListing?->id,
-                    'title' => $app->jobListing?->title,
-                    'category' => $app->jobListing?->category?->name,
-                ],
-                'status' => $app->status,
-                'ats_score' => $app->ats_score_percentage ?? 0,
-                'matched_keywords' => $app->matched_keywords ?? [],
-                'missing_keywords' => $app->missing_keywords ?? [],
-                'experience_years' => $app->years_of_experience,
-                'education_level' => $app->education_level,
-                'expected_salary' => $app->expected_salary,
-                'created_at' => $app->created_at->format('Y-m-d H:i'),
-                'can_update' => ! in_array($app->status, ['hired', 'rejected']),
-            ];
-        });
-
-        // Filter options
-        $jobs = JobListing::where('is_active', true)->get(['id', 'title']);
-        $statuses = Application::$statuses;
+        $applications->getCollection()->transform(fn($app) => [
+            'id'               => $app->id,
+            'name'             => $app->name,
+            'email'            => $app->email,
+            'phone'            => $app->phone,
+            'job' => [
+                'id'       => $app->jobListing?->id,
+                'title'    => $app->jobListing?->title,
+                'category' => $app->jobListing?->category?->name,
+            ],
+            'status'           => $app->status,
+            'ats_score'        => $app->ats_score_percentage ?? 0,
+            'experience_years' => $app->years_of_experience,
+            'education_level'  => $app->education_level,
+            'expected_salary'  => $app->expected_salary,
+            'created_at'       => $app->created_at->format('Y-m-d H:i'),
+            'can_update'       => ! in_array($app->status, [
+                Application::STATUS_HIRED,
+                Application::STATUS_REJECTED,
+            ], true),
+        ]);
 
         return Inertia::render('ATS/Applications/Index', [
             'applications' => $applications,
-            'filters' => $request->only(['status', 'job_id', 'search', 'min_ats_score', 'per_page']),
-            'jobs' => $jobs,
-            'statuses' => $statuses,
-            'statusCounts' => [
-                'pending' => Application::where('status', 'pending')->count(),
-                'shortlisted' => Application::where('status', 'shortlisted')->count(),
-                'rejected' => Application::where('status', 'rejected')->count(),
-                'hired' => Application::where('status', 'hired')->count(),
-            ],
+            'filters'      => $request->only(['status', 'job_id', 'search', 'min_ats_score', 'per_page']),
+            'jobs'         => JobListing::where('is_active', true)->get(['id', 'title']),
+            'statuses'     => Application::$statuses,
+            'statusCounts' => Application::statusCounts(),
         ]);
     }
 
     /**
-     * Show single application details
+     * Show single application details.
      */
     public function showApplication(int $id): Response
     {
         $application = Application::with([
-            'jobListing' => fn ($q) => $q->with(['employer', 'category', 'locations']),
-            'applicantProfile' => fn ($q) => $q->with([
-                'user',
-                'jobHistories',
-                'educationHistories',
-                'achievements',
-                'cvs',
-            ]),
-            'statusTimelines' => fn ($q) => $q->orderBy('created_at', 'desc'),
+            'jobListing:id,title,description,requirements,category_id',
+            'jobListing.category:id,name',
+            'statusTimelines' => fn($q) => $q->orderByDesc('created_at'),
         ])->findOrFail($id);
 
         $atsAnalysis = $application->ats_score['analysis'] ?? null;
@@ -175,45 +183,71 @@ class ATSController extends Controller
     }
 
     /**
-     * Update application status
+     * Update application status.
      */
     public function updateStatus(Request $request, int $id)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,shortlisted,rejected,hired',
-            'notes' => 'nullable|string|max:1000',
+            'status' => ['required', Rule::in(Application::$statuses)],
+            'notes'  => ['nullable', 'string', 'max:1000'],
         ]);
 
         $application = Application::findOrFail($id);
-        $oldStatus = $application->status;
+        $oldStatus   = $application->status;
 
-        $application->updateStatus($validated['status'], $validated['notes']);
+        $application->updateStatus($validated['status'], $validated['notes'] ?? null);
 
         return back()->with('success', "Application status updated from {$oldStatus} to {$validated['status']}.");
     }
 
     /**
-     * Bulk update application statuses
+     * Bulk update application statuses.
+     * 1 UPDATE + 1 bulk insert of timelines + notifications after commit.
      */
     public function bulkUpdateStatus(Request $request)
     {
         $validated = $request->validate([
-            'application_ids' => 'required|array|min:1',
-            'application_ids.*' => 'exists:applications,id',
-            'status' => 'required|in:pending,shortlisted,rejected,hired',
-            'notes' => 'nullable|string|max:1000',
+            'application_ids'   => ['required', 'array', 'min:1'],
+            'application_ids.*' => ['exists:applications,id'],
+            'status'            => ['required', Rule::in(Application::$statuses)],
+            'notes'             => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $updated = Application::whereIn('id', $validated['application_ids'])
-            ->each(function ($app) use ($validated) {
-                $app->updateStatus($validated['status'], $validated['notes']);
-            });
+        $ids    = $validated['application_ids'];
+        $status = $validated['status'];
+        $notes  = $validated['notes'] ?? null;
+        $now    = now();
 
-        return back()->with('success', count($validated['application_ids']).' applications updated successfully.');
+        DB::transaction(function () use ($ids, $status, $notes, $now) {
+            Application::whereIn('id', $ids)->update([
+                'status'         => $status,
+                'employer_notes' => $notes,
+                'updated_at'     => $now,
+            ]);
+
+            StatusTimeline::insert(
+                collect($ids)->map(fn($id) => [
+                    'application_id' => $id,
+                    'status'         => $status,
+                    'notes'          => $notes,
+                    'created_at'     => $now,
+                    'updated_at'     => $now,
+                ])->all()
+            );
+        });
+
+        // Notify after the transaction commits.
+        $applications = Application::with('user')->whereIn('id', $ids)->get();
+
+        foreach ($applications as $app) {
+            $app->user?->notify(new ApplicationStatusUpdated($app, null, $notes));
+        }
+
+        return back()->with('success', count($ids) . ' applications updated successfully.');
     }
 
     /**
-     * Recalculate ATS score for an application
+     * Recalculate ATS score for an application.
      */
     public function recalculateAtsScore(int $id)
     {
@@ -227,17 +261,17 @@ class ATSController extends Controller
             }
 
             return back()->with('error', 'Failed to recalculate ATS score.');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
 
     /**
-     * Display job listings
+     * Display job listings.
      */
     public function jobs(): Response
     {
-        $jobs = JobListing::with(['category', 'locations'])
+        $jobs = JobListing::with(['category:id,name', 'locations:id,name'])
             ->withCount('applications')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
@@ -248,35 +282,65 @@ class ATSController extends Controller
     }
 
     /**
-     * Show applications for a specific job
+     * Show applications for a specific job.
      */
     public function jobApplications(int $jobId, Request $request): Response
     {
-        $job = JobListing::findOrFail($jobId);
+        $job = JobListing::with(['category:id,name'])->findOrFail($jobId);
 
-        $query = Application::with([
-            'applicantProfile.user',
-            'statusTimelines',
-        ])->where('job_listing_id', $jobId);
+        $baseQuery = Application::query()
+            ->select([
+                'id',
+                'name',
+                'email',
+                'phone',
+                'job_listing_id',
+                'status',
+                'ats_score_percentage',
+                'years_of_experience',
+                'education_level',
+                'created_at',
+            ])
+            ->where('job_listing_id', $jobId);
+
+        // Filtered paginated query
+        $listQuery = (clone $baseQuery)->latest();
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $listQuery->where('status', $request->status);
         }
 
-        $applications = $query->orderBy('created_at', 'desc')->paginate(20);
+        $applications = $listQuery->paginate(20)->withQueryString();
 
-        $statusCounts = [
-            'pending' => (clone $query)->where('status', 'pending')->count(),
-            'shortlisted' => (clone $query)->where('status', 'shortlisted')->count(),
-            'rejected' => (clone $query)->where('status', 'rejected')->count(),
-            'hired' => (clone $query)->where('status', 'hired')->count(),
-        ];
+        // One grouped query for status counts on the full job set
+        $statusCounts = Application::statusCounts(clone $baseQuery);
+        unset($statusCounts['total']); // job view shows per-status only
+
+        $applications->getCollection()->transform(fn($app) => [
+            'id'               => $app->id,
+            'name'             => $app->name,
+            'email'            => $app->email,
+            'phone'            => $app->phone,
+            'status'           => $app->status,
+            'ats_score'        => $app->ats_score_percentage ?? 0,
+            'years_of_experience' => $app->years_of_experience,
+            'education_level'  => $app->education_level,
+            'created_at'       => $app->created_at->toIso8601String(),
+            'can_update'       => ! in_array($app->status, [
+                Application::STATUS_HIRED,
+                Application::STATUS_REJECTED,
+            ], true),
+        ]);
 
         return Inertia::render('ATS/Jobs/Applications', [
-            'job' => $job,
+            'job'          => [
+                'id'       => $job->id,
+                'title'    => $job->title,
+                'category' => $job->category ? ['name' => $job->category->name] : null,
+            ],
             'applications' => $applications,
             'statusCounts' => $statusCounts,
-            'filters' => $request->only(['status']),
+            'filters'      => $request->only(['status']),
         ]);
     }
 
@@ -285,19 +349,19 @@ class ATSController extends Controller
      */
     public function applyForm(int $jobId): Response
     {
-        $job = JobListing::with(['category', 'locations'])->findOrFail($jobId);
+        $job = JobListing::with(['category:id,name', 'locations:id,name'])->findOrFail($jobId);
 
         return Inertia::render('ATS/Apply', [
             'job' => [
-                'id' => $job->id,
-                'title' => $job->title,
-                'description' => $job->description,
+                'id'           => $job->id,
+                'title'        => $job->title,
+                'description'  => $job->description,
                 'requirements' => $job->requirements,
-                'keywords' => collect($job->keywords)->take(15)->values(),
-                'category' => $job->category?->name,
-                'locations' => $job->locations->pluck('name')->values(),
-                'job_type' => $job->getJobTypeLabelAttribute(),
-                'is_active' => $job->is_active,
+                'keywords'     => collect($job->keywords)->take(15)->values(),
+                'category'     => $job->category?->name,
+                'locations'    => $job->locations->pluck('name')->values(),
+                'job_type'     => $job->getJobTypeLabelAttribute(),
+                'is_active'    => $job->is_active,
             ],
         ]);
     }
@@ -309,28 +373,28 @@ class ATSController extends Controller
     {
         $job = JobListing::findOrFail($jobId);
 
-        if (! $job->is_active) {
+        if (! $job->canApply()) {
             return back()->withErrors(['cv' => 'This job posting is no longer accepting applications.']);
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'name'               => ['required', 'string', 'max:255'],
+            'email'              => ['required', 'email', 'max:255'],
+            'phone'              => ['nullable', 'string', 'max:50'],
             'years_of_experience' => ['nullable', 'integer', 'min:0', 'max:60'],
-            'education_level' => ['nullable', 'in:high_school,associate,bachelor,master,phd'],
-            'expected_salary' => ['nullable', 'numeric', 'min:0'],
-            'cv' => [
+            'education_level'    => ['nullable', 'in:high_school,associate,bachelor,master,phd'],
+            'expected_salary'    => ['nullable', 'numeric', 'min:0'],
+            'cv'                 => [
                 'required',
                 'file',
                 'extensions:pdf,doc,docx',
                 'max:5120',
                 function (string $attribute, UploadedFile $file, Closure $fail): void {
                     $extension = strtolower($file->getClientOriginalExtension());
-                    $contents = file_get_contents($file->getRealPath());
-                    $isValid = match ($extension) {
-                        'pdf' => is_string($contents) && str_starts_with($contents, '%PDF-'),
-                        'doc' => is_string($contents) && str_starts_with($contents, "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"),
+                    $contents  = file_get_contents($file->getRealPath());
+                    $isValid   = match ($extension) {
+                        'pdf'  => is_string($contents) && str_starts_with($contents, '%PDF-'),
+                        'doc'  => is_string($contents) && str_starts_with($contents, "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"),
                         'docx' => $this->isValidDocx($file),
                         default => false,
                     };
@@ -342,35 +406,54 @@ class ATSController extends Controller
             ],
         ]);
 
-        $resumePath = $request->file('cv')->store('resumes', 'public');
+        // Reject duplicate submissions from the same email within 5 minutes.
+        $recent = Application::where('job_listing_id', $job->id)
+            ->where('email', $validated['email'])
+            ->where('created_at', '>', now()->subMinutes(5))
+            ->exists();
+
+        if ($recent) {
+            return back()->withErrors([
+                'email' => 'You already applied for this job recently. Please wait a few minutes.',
+            ]);
+        }
+
+        $resumePath = $request->file('cv')->store("resumes/{$job->id}", 'public');
 
         $application = Application::create([
-            'job_listing_id' => $job->id,
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'resume_path' => $resumePath,
-            'years_of_experience' => (int) ($validated['years_of_experience'] ?? 0),
-            'education_level' => $validated['education_level'] ?? 'bachelor',
-            'expected_salary' => $validated['expected_salary'] ?? null,
-            'status' => Application::STATUS_PENDING,
+            'job_listing_id'         => $job->id,
+            'name'                   => $validated['name'],
+            'email'                  => $validated['email'],
+            'phone'                  => $validated['phone'] ?? null,
+            'resume_path'            => $resumePath,
+            'years_of_experience'    => (int) ($validated['years_of_experience'] ?? 0),
+            'education_level'        => $validated['education_level'] ?? 'bachelor',
+            'expected_salary'        => $validated['expected_salary'] ?? null,
+            'status'                 => Application::STATUS_PENDING,
             'ats_calculation_status' => Application::ATS_PENDING,
         ]);
 
         StatusTimeline::create([
             'application_id' => $application->id,
-            'status' => Application::STATUS_PENDING,
-            'notes' => 'Application received',
+            'status'         => Application::STATUS_PENDING,
+            'notes'          => 'Application received',
         ]);
 
-        // Run the ATS score inline so the tester sees the result immediately.
+        // Run ATS inline so the tester sees the result immediately.
         $application->recalculateAtsScoreInline();
+
+        // Bust cached dashboard stats so fresh data shows up.
+        Cache::forget('ats:status-counts');
+        Cache::forget('ats:score-stats');
 
         return redirect()
             ->route('ats.applications.show', $application->id)
             ->with('success', 'Your application was submitted and scored by the ATS. View your result below.');
     }
 
+    /**
+     * Verify a DOCX upload is a real OOXML package.
+     */
     private function isValidDocx(UploadedFile $file): bool
     {
         $archive = new ZipArchive;

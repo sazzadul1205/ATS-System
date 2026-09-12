@@ -7,10 +7,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Public ATS Website
 |--------------------------------------------------------------------------
-|
-| The ATS system is the public-facing website, so every page is accessible
-| without authentication.
-|
 */
 
 Route::get('/', [ATSController::class, 'dashboard'])->name('home');
@@ -27,6 +23,8 @@ Route::post('/ats/applications/{id}/recalculate-ats', [ATSController::class, 're
 Route::get('/ats/jobs', [ATSController::class, 'jobs'])->name('ats.jobs.index');
 Route::get('/ats/jobs/{jobId}/applications', [ATSController::class, 'jobApplications'])->name('ats.jobs.applications');
 
-// Public apply flow – lets testers upload their own CV and run the ATS
+// Public apply flow — throttled to 5 submissions per minute per IP
 Route::get('/ats/jobs/{jobId}/apply', [ATSController::class, 'applyForm'])->name('ats.jobs.apply');
-Route::post('/ats/jobs/{jobId}/apply', [ATSController::class, 'storeApplication'])->name('ats.jobs.apply.store');
+Route::post('/ats/jobs/{jobId}/apply', [ATSController::class, 'storeApplication'])
+  ->middleware('throttle:5,1')
+  ->name('ats.jobs.apply.store');
