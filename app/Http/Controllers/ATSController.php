@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\JobCategory;
 use App\Models\JobListing;
+use App\Models\Location;
 use App\Models\StatusTimeline;
 use App\Notifications\ApplicationStatusUpdated;
 use Closure;
