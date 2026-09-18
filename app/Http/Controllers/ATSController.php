@@ -24,26 +24,42 @@ class ATSController extends Controller
      */
     public function dashboard(Request $request): Response
     {
-        $statusCounts = Cache::remember(
-            'ats:status-counts',
-            30,
-            fn() => Application::statusCounts()
-        );
+        // Use cache tags if available for selective invalidation
+        $cacheTags = method_exists(Cache::class, 'tags') ? Cache::tags(['ats_dashboard']) : null;
+        
+        $statusCounts = $cacheTags 
+            ? $cacheTags->remember('ats:status-counts', 30, fn() => Application::statusCounts())
+            : Cache::remember('ats:status-counts', 30, fn() => Application::statusCounts());
 
-        $atsStats = Cache::remember('ats:score-stats', 60, function () {
-            $row = Application::query()
-                ->whereNotNull('ats_score_percentage')
-                ->selectRaw('AVG(ats_score_percentage) as avg_ats')
-                ->selectRaw('MIN(ats_score_percentage) as min_ats')
-                ->selectRaw('MAX(ats_score_percentage) as max_ats')
-                ->first();
+        $atsStats = $cacheTags
+            ? $cacheTags->remember('ats:score-stats', 60, function () {
+                $row = Application::query()
+                    ->whereNotNull('ats_score_percentage')
+                    ->selectRaw('AVG(ats_score_percentage) as avg_ats')
+                    ->selectRaw('MIN(ats_score_percentage) as min_ats')
+                    ->selectRaw('MAX(ats_score_percentage) as max_ats')
+                    ->first();
 
-            return [
-                'avg' => round((float) ($row->avg_ats ?? 0), 2),
-                'min' => (int) ($row->min_ats ?? 0),
-                'max' => (int) ($row->max_ats ?? 0),
-            ];
-        });
+                return [
+                    'avg' => round((float) ($row->avg_ats ?? 0), 2),
+                    'min' => (int) ($row->min_ats ?? 0),
+                    'max' => (int) ($row->max_ats ?? 0),
+                ];
+            })
+            : Cache::remember('ats:score-stats', 60, function () {
+                $row = Application::query()
+                    ->whereNotNull('ats_score_percentage')
+                    ->selectRaw('AVG(ats_score_percentage) as avg_ats')
+                    ->selectRaw('MIN(ats_score_percentage) as min_ats')
+                    ->selectRaw('MAX(ats_score_percentage) as max_ats')
+                    ->first();
+
+                return [
+                    'avg' => round((float) ($row->avg_ats ?? 0), 2),
+                    'min' => (int) ($row->min_ats ?? 0),
+                    'max' => (int) ($row->max_ats ?? 0),
+                ];
+            });
 
         $recentApplications = Application::query()
             ->select([
@@ -77,12 +93,42 @@ class ATSController extends Controller
             ->limit(5)
             ->get();
 
+        // Add trend data for dashboard analytics
+        $trendData = $this->calculateTrendData();
+
         return Inertia::render('ATS/Dashboard', [
             'statusCounts'       => $statusCounts,
             'atsStats'           => $atsStats,
             'recentApplications' => $recentApplications,
             'topJobs'            => $topJobs,
+            'trendData'          => $trendData,
         ]);
+    }
+
+    /**
+     * Calculate trend data for the last 7 days.
+     */
+    private function calculateTrendData(): array
+    {
+        $now = now();
+        $trends = [];
+        
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $now->clone()->subDays($i);
+            $dateStr = $date->format('Y-m-d');
+            
+            $count = Application::whereDate('created_at', $dateStr)->count();
+            $hired = Application::whereDate('created_at', $dateStr)->where('status', 'hired')->count();
+            
+            $trends[] = [
+                'date' => $dateStr,
+                'label' => $date->format('M d'),
+                'applications' => $count,
+                'hired' => $hired,
+            ];
+        }
+        
+        return $trends;
     }
 
     /**
@@ -443,12 +489,65 @@ class ATSController extends Controller
         $application->recalculateAtsScoreInline();
 
         // Bust cached dashboard stats so fresh data shows up.
-        Cache::forget('ats:status-counts');
-        Cache::forget('ats:score-stats');
+        if (method_exists(Cache::class, 'tags')) {
+            Cache::tags(['ats_dashboard'])->flush();
+        } else {
+            Cache::forget('ats:status-counts');
+            Cache::forget('ats:score-stats');
+        }
 
         return redirect()
             ->route('ats.applications.show', $application->id)
             ->with('success', 'Your application was submitted and scored by the ATS. View your result below.');
+    }
+
+    /**
+     * Export applications to CSV for a specific job or all jobs.
+     */
+    public function exportApplications(Request $request)
+    {
+        $validated = $request->validate([
+            'job_id' => ['nullable', 'exists:job_listings,id'],
+            'status' => ['nullable', Rule::in(Application::$statuses)],
+        ]);
+
+        $query = Application::query()
+            ->with(['jobListing:id,title'])
+            ->orderByDesc('created_at');
+
+        if ($request->filled('job_id')) {
+            $query->where('job_listing_id', $validated['job_id']);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $validated['status']);
+        }
+
+        $applications = $query->get();
+
+        $csvData = "ID,Name,Email,Job Title,Status,ATS Score,Years Experience,Education,Applied At\n";
+
+        foreach ($applications as $app) {
+            $csvData .= sprintf(
+                "%d,\"%s\",\"%s\",\"%s\",%s,%d,%d,%s,%s\n",
+                $app->id,
+                str_replace('"', '""', $app->name),
+                str_replace('"', '""', $app->email),
+                str_replace('"', '""', $app->jobListing?->title ?? 'N/A'),
+                $app->status,
+                $app->ats_score_percentage ?? 0,
+                $app->years_of_experience ?? 0,
+                $app->education_level ?? 'N/A',
+                $app->created_at->toIso8601String()
+            );
+        }
+
+        $filename = 'applications_' . now()->format('Y-m-d_His') . '.csv';
+
+        return response($csvData, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     /**

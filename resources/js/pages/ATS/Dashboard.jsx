@@ -11,11 +11,12 @@ import {
     Target,
     Briefcase,
     Calendar,
+    Download,
 } from 'lucide-react';
 
 export default function ATSDashboard() {
     const { props } = usePage();
-    const { statusCounts, atsStats, recentApplications, topJobs } = props;
+    const { statusCounts, atsStats, recentApplications, topJobs, trendData } = props;
 
     const stats = [
         { label: 'Total Applications', value: statusCounts.total, color: 'text-indigo-600 dark:text-indigo-400', icon: Users },
@@ -45,17 +46,30 @@ export default function ATSDashboard() {
         return 'bg-red-500';
     };
 
+    const handleExport = () => {
+        window.open('/ats/applications/export', '_blank');
+    };
+
     return (
         <AppLayout>
             <Head title="ATS Dashboard" />
             <div className="space-y-6">
                 {/* Header */}
-                <div>
-                    <h2 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
-                        <BarChart3 className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-                        ATS Dashboard
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Overview of your Applicant Tracking System</p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+                            <BarChart3 className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                            ATS Dashboard
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Overview of your Applicant Tracking System</p>
+                    </div>
+                    <button
+                        onClick={handleExport}
+                        className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                    >
+                        <Download className="h-4 w-4" />
+                        Export CSV
+                    </button>
                 </div>
 
                 {/* Stats Cards */}
