@@ -18,6 +18,7 @@ Route::get('/ats/applications/{id}', [ATSController::class, 'showApplication'])-
 Route::post('/ats/applications/{id}/status', [ATSController::class, 'updateStatus'])->name('ats.applications.update-status');
 Route::post('/ats/applications/bulk-status', [ATSController::class, 'bulkUpdateStatus'])->name('ats.applications.bulk-status');
 Route::post('/ats/applications/{id}/recalculate-ats', [ATSController::class, 'recalculateAtsScore'])->name('ats.applications.recalculate-ats');
+Route::get('/ats/applications/export', [ATSController::class, 'exportApplications'])->name('ats.applications.export');
 
 // Jobs
 Route::get('/ats/jobs', [ATSController::class, 'jobs'])->name('ats.jobs.index');
