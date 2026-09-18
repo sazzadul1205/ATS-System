@@ -9,11 +9,27 @@ import {
     Eye,
     CheckCircle,
     XCircle,
+    Plus,
+    Edit,
+    Trash2,
 } from 'lucide-react';
 
 export default function JobsIndex() {
     const { props } = usePage();
     const { jobs } = props;
+
+    const handleDelete = (jobId, e) => {
+        e.stopPropagation();
+        if (confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) {
+            router.delete(`/ats/jobs/${jobId}`);
+        }
+    };
+
+    const handleEdit = (jobId, e) => {
+        e.stopPropagation();
+        // For now, we'll just show an alert - you can implement edit functionality later
+        alert('Edit functionality coming soon! Job ID: ' + jobId);
+    };
 
     return (
         <AppLayout>
@@ -27,6 +43,13 @@ export default function JobsIndex() {
                         </h2>
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage job postings and track applications</p>
                     </div>
+                    <button
+                        onClick={() => router.visit('/ats/jobs/create')}
+                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Create New Job
+                    </button>
                 </div>
 
                 {/* Jobs Grid */}
@@ -75,6 +98,24 @@ export default function JobsIndex() {
 
                             <p className="mb-4 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{job.description}</p>
 
+                            {/* Action Buttons Row */}
+                            <div className="mb-3 flex gap-2">
+                                <button
+                                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    onClick={(e) => handleEdit(job.id, e)}
+                                >
+                                    <Edit className="h-3 w-3" />
+                                    Edit
+                                </button>
+                                <button
+                                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
+                                    onClick={(e) => handleDelete(job.id, e)}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                    Delete
+                                </button>
+                            </div>
+
                             <div className="space-y-2 border-t border-gray-200 pt-4 dark:border-gray-700">
                                 <button
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:bg-indigo-500 dark:hover:bg-indigo-600"
@@ -113,8 +154,11 @@ export default function JobsIndex() {
                                         ? 'bg-indigo-600 text-white dark:bg-indigo-500'
                                         : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
                                     } disabled:cursor-not-allowed disabled:opacity-50`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
+                                // Security fix: Render as text to prevent XSS instead of using dangerouslySetInnerHTML
+                                title={link.label.replace(/&laquo;|&raquo;|&lt;|&gt;/g, '')}
+                            >
+                                {link.label.replace('&laquo;', '«').replace('&raquo;', '»').replace(/&lt;/g, '<').replace(/&gt;/g, '>')}
+                            </button>
                         ))}
                     </div>
                 )}

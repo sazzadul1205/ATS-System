@@ -22,6 +22,10 @@ Route::get('/ats/applications/export', [ATSController::class, 'exportApplication
 
 // Jobs
 Route::get('/ats/jobs', [ATSController::class, 'jobs'])->name('ats.jobs.index');
+Route::get('/ats/jobs/create', [ATSController::class, 'createJob'])->name('ats.jobs.create');
+Route::post('/ats/jobs', [ATSController::class, 'storeJob'])->name('ats.jobs.store');
+Route::put('/ats/jobs/{jobId}', [ATSController::class, 'updateJob'])->name('ats.jobs.update');
+Route::delete('/ats/jobs/{jobId}', [ATSController::class, 'deleteJob'])->name('ats.jobs.delete');
 Route::get('/ats/jobs/{jobId}/applications', [ATSController::class, 'jobApplications'])->name('ats.jobs.applications');
 
 // Public apply flow — throttled to 5 submissions per minute per IP
