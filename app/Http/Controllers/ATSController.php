@@ -328,6 +328,187 @@ class ATSController extends Controller
     }
 
     /**
+     * Show the form for creating a new job listing.
+     */
+    public function createJob(): Response
+    {
+        $categories = JobCategory::active()->get(['id', 'name']);
+        $locations = Location::active()->get(['id', 'name']);
+
+        return Inertia::render('ATS/Jobs/Create', [
+            'categories' => $categories,
+            'locations' => $locations,
+            'jobTypes' => JobListing::$jobTypes,
+            'experienceLevels' => JobListing::$experienceLevels,
+        ]);
+    }
+
+    /**
+     * Store a newly created job listing.
+     */
+    public function storeJob(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'requirements' => ['required', 'string'],
+            'job_type' => ['required', Rule::in(JobListing::$jobTypes)],
+            'salary_min' => ['nullable', 'numeric', 'min:0'],
+            'salary_max' => ['nullable', 'numeric', 'min:0', 'gte:salary_min'],
+            'is_salary_negotiable' => ['boolean'],
+            'as_per_companies_policy' => ['boolean'],
+            'category_id' => ['required', 'exists:job_categories,id'],
+            'experience_level' => ['required', Rule::in(JobListing::$experienceLevels)],
+            'education_requirement' => ['nullable', 'string', 'max:255'],
+            'education_details' => ['nullable', 'string'],
+            'benefits' => ['nullable', 'array'],
+            'benefits.*' => ['string'],
+            'skills' => ['nullable', 'array'],
+            'skills.*' => ['string'],
+            'responsibilities' => ['nullable', 'array'],
+            'responsibilities.*' => ['string'],
+            'keywords' => ['nullable', 'array'],
+            'keywords.*' => ['string'],
+            'application_deadline' => ['nullable', 'date', 'after:today'],
+            'publish_at' => ['nullable', 'date'],
+            'is_active' => ['boolean'],
+            'required_facebook_link' => ['boolean'],
+            'required_linkedin_link' => ['boolean'],
+            'location_ids' => ['nullable', 'array'],
+            'location_ids.*' => ['exists:locations,id'],
+        ]);
+
+        $job = JobListing::create([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'requirements' => $validated['requirements'],
+            'job_type' => $validated['job_type'],
+            'salary_min' => $validated['salary_min'] ?? null,
+            'salary_max' => $validated['salary_max'] ?? null,
+            'is_salary_negotiable' => $validated['is_salary_negotiable'] ?? false,
+            'as_per_companies_policy' => $validated['as_per_companies_policy'] ?? false,
+            'category_id' => $validated['category_id'],
+            'experience_level' => $validated['experience_level'],
+            'education_requirement' => $validated['education_requirement'] ?? null,
+            'education_details' => $validated['education_details'] ?? null,
+            'benefits' => $validated['benefits'] ?? [],
+            'skills' => $validated['skills'] ?? [],
+            'responsibilities' => $validated['responsibilities'] ?? [],
+            'keywords' => $validated['keywords'] ?? [],
+            'application_deadline' => $validated['application_deadline'] ?? null,
+            'publish_at' => $validated['publish_at'] ?? now(),
+            'is_active' => $validated['is_active'] ?? true,
+            'required_facebook_link' => $validated['required_facebook_link'] ?? false,
+            'required_linkedin_link' => $validated['required_linkedin_link'] ?? false,
+            'user_id' => auth()->id(),
+        ]);
+
+        if (!empty($validated['location_ids'])) {
+            $job->locations()->sync($validated['location_ids']);
+        }
+
+        // Invalidate dashboard cache
+        if (method_exists(Cache::class, 'tags')) {
+            Cache::tags(['ats_dashboard'])->flush();
+        } else {
+            Cache::flush();
+        }
+
+        return redirect()->route('ats.jobs.index')->with('success', 'Job listing created successfully!');
+    }
+
+    /**
+     * Update an existing job listing.
+     */
+    public function updateJob(Request $request, int $jobId): RedirectResponse
+    {
+        $job = JobListing::findOrFail($jobId);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'requirements' => ['required', 'string'],
+            'job_type' => ['required', Rule::in(JobListing::$jobTypes)],
+            'salary_min' => ['nullable', 'numeric', 'min:0'],
+            'salary_max' => ['nullable', 'numeric', 'min:0', 'gte:salary_min'],
+            'is_salary_negotiable' => ['boolean'],
+            'as_per_companies_policy' => ['boolean'],
+            'category_id' => ['required', 'exists:job_categories,id'],
+            'experience_level' => ['required', Rule::in(JobListing::$experienceLevels)],
+            'education_requirement' => ['nullable', 'string', 'max:255'],
+            'education_details' => ['nullable', 'string'],
+            'benefits' => ['nullable', 'array'],
+            'benefits.*' => ['string'],
+            'skills' => ['nullable', 'array'],
+            'skills.*' => ['string'],
+            'responsibilities' => ['nullable', 'array'],
+            'responsibilities.*' => ['string'],
+            'keywords' => ['nullable', 'array'],
+            'keywords.*' => ['string'],
+            'application_deadline' => ['nullable', 'date', 'after:today'],
+            'publish_at' => ['nullable', 'date'],
+            'is_active' => ['boolean'],
+            'required_facebook_link' => ['boolean'],
+            'required_linkedin_link' => ['boolean'],
+            'location_ids' => ['nullable', 'array'],
+            'location_ids.*' => ['exists:locations,id'],
+        ]);
+
+        $job->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'requirements' => $validated['requirements'],
+            'job_type' => $validated['job_type'],
+            'salary_min' => $validated['salary_min'] ?? null,
+            'salary_max' => $validated['salary_max'] ?? null,
+            'is_salary_negotiable' => $validated['is_salary_negotiable'] ?? false,
+            'as_per_companies_policy' => $validated['as_per_companies_policy'] ?? false,
+            'category_id' => $validated['category_id'],
+            'experience_level' => $validated['experience_level'],
+            'education_requirement' => $validated['education_requirement'] ?? null,
+            'education_details' => $validated['education_details'] ?? null,
+            'benefits' => $validated['benefits'] ?? [],
+            'skills' => $validated['skills'] ?? [],
+            'responsibilities' => $validated['responsibilities'] ?? [],
+            'keywords' => $validated['keywords'] ?? [],
+            'application_deadline' => $validated['application_deadline'] ?? null,
+            'publish_at' => $validated['publish_at'] ?? now(),
+            'is_active' => $validated['is_active'] ?? true,
+            'required_facebook_link' => $validated['required_facebook_link'] ?? false,
+            'required_linkedin_link' => $validated['required_linkedin_link'] ?? false,
+        ]);
+
+        $job->locations()->sync($validated['location_ids'] ?? []);
+
+        // Invalidate dashboard cache
+        if (method_exists(Cache::class, 'tags')) {
+            Cache::tags(['ats_dashboard'])->flush();
+        } else {
+            Cache::flush();
+        }
+
+        return redirect()->route('ats.jobs.index')->with('success', 'Job listing updated successfully!');
+    }
+
+    /**
+     * Delete a job listing.
+     */
+    public function deleteJob(int $jobId): RedirectResponse
+    {
+        $job = JobListing::findOrFail($jobId);
+        $job->delete();
+
+        // Invalidate dashboard cache
+        if (method_exists(Cache::class, 'tags')) {
+            Cache::tags(['ats_dashboard'])->flush();
+        } else {
+            Cache::flush();
+        }
+
+        return redirect()->route('ats.jobs.index')->with('success', 'Job listing deleted successfully!');
+    }
+
+    /**
      * Show applications for a specific job.
      */
     public function jobApplications(int $jobId, Request $request): Response
